@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Servidor en tiempo real para Dinámica de Sorteo QR y Visor de Pantalla (TV / Proyector)
-Sincroniza en vivo los escaneos de los celulares con la pantalla grande.
+Servidor en tiempo real para Dinámica del Dado COOSAJO MICOOPE:
+- /       -> index.html (MONITOR para TV / Proyector)
+- /jugar  -> jugar.html (Juego del dado móvil)
+- /admin  -> admin.html (Panel de control y reseteo de conteo)
 """
 
 import os
@@ -15,7 +17,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=BASE_DIR)
 
-# Estado global en memoria
 estado = {
     "probabilidades": {
         "gracias": 75,
@@ -32,12 +33,10 @@ estado = {
     "historial": []
 }
 
-# Clientes suscritos al visor (Server-Sent Events)
 suscriptores_visor = []
 
 
 def obtener_ip_local():
-    """Detecta la IP local de la computadora en la red Wi-Fi / LAN."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(("8.8.8.8", 80))
@@ -50,7 +49,6 @@ def obtener_ip_local():
 
 
 def notificar_visores(data):
-    """Envía un evento en tiempo real a todas las pantallas de TV conectadas."""
     for q in list(suscriptores_visor):
         try:
             q.put_nowait(data)
@@ -69,16 +67,23 @@ def cors(res):
 # --- RUTAS DE PÁGINAS ---
 
 @app.route("/")
-@app.route("/jugar")
-def ruta_jugar():
-    """Página que abre el usuario en su celular al escanear el QR."""
+@app.route("/monitor")
+def ruta_monitor():
+    """INDEX: El MONITOR para la pantalla de TV / Proyector."""
     return send_from_directory(BASE_DIR, "index.html")
 
 
-@app.route("/visor")
-def ruta_visor():
-    """Pantalla gigante para proyectar en TV o transmisión en vivo."""
-    return send_from_directory(BASE_DIR, "visor.html")
+@app.route("/jugar")
+@app.route("/dado")
+def ruta_jugar():
+    """JUGAR: Donde están los datos y el dado rodante del participante."""
+    return send_from_directory(BASE_DIR, "jugar.html")
+
+
+@app.route("/admin")
+def ruta_admin():
+    """ADMIN: Panel para resetear el conteo y ajustar probabilidades."""
+    return send_from_directory(BASE_DIR, "admin.html")
 
 
 @app.route("/<path:filename>")
@@ -86,7 +91,7 @@ def static_files(filename):
     return send_from_directory(BASE_DIR, filename)
 
 
-# --- API DE SINCRONIZACIÓN EN TIEMPO REAL ---
+# --- APIS DE SINCRONIZACIÓN Y RESET ---
 
 @app.route("/api/config", methods=["GET"])
 def get_config():
@@ -95,13 +100,34 @@ def get_config():
         "probabilidades": estado["probabilidades"],
         "estadisticas": estado["estadisticas"],
         "ip_local": ip,
-        "url_juego": f"http://{ip}:5050/jugar"
+        "url_juego": f"http://{ip}:5050/jugar",
+        "url_monitor": f"http://{ip}:5050/",
+        "url_admin": f"http://{ip}:5050/admin"
     })
+
+
+@app.route("/api/reset", methods=["POST"])
+def reset_estadisticas():
+    """Resetea el conteo a 0 desde el admin y lo refleja en el monitor."""
+    estado["estadisticas"] = {
+        "total": 0,
+        "gracias": 0,
+        "promocional": 0,
+        "premio": 0
+    }
+    estado["ultimo_evento"] = None
+    estado["historial"] = []
+
+    evento = {
+        "tipo": "RESET_ESTADISTICAS",
+        "timestamp": time.strftime("%H:%M:%S")
+    }
+    notificar_visores(evento)
+    return jsonify({"status": "ok", "message": "Conteo reseteado a cero"})
 
 
 @app.route("/api/tirada", methods=["POST"])
 def registrar_tirada():
-    """Llamado por el celular tan pronto se sortea automáticamente."""
     data = request.json or {}
     resultado = data.get("resultado", "GRACIAS POR PARTICIPAR")
     folio = data.get("folio", "PR-0000")
@@ -125,18 +151,15 @@ def registrar_tirada():
 
     estado["ultimo_evento"] = evento
     estado["historial"].insert(0, evento)
-    if len(estado["historial"]) > 20:
+    if len(estado["historial"]) > 50:
         estado["historial"].pop()
 
-    # Notificar a los visores de TV en tiempo real
     notificar_visores(evento)
-
     return jsonify({"status": "ok", "evento": evento})
 
 
 @app.route("/api/iniciando_escaneo", methods=["POST"])
 def avisar_escaneo():
-    """Avisa a la TV que alguien acaba de abrir la página y empezará a sortear."""
     evento = {
         "tipo": "INICIANDO_SORTEO",
         "timestamp": time.strftime("%H:%M:%S")
@@ -147,12 +170,10 @@ def avisar_escaneo():
 
 @app.route("/api/stream")
 def sse_stream():
-    """Server-Sent Events: transmite en vivo cada sorteo a la pantalla de TV."""
     def event_stream():
         q = Queue()
         suscriptores_visor.append(q)
         try:
-            # Enviar estado inicial
             yield f"data: {json.dumps({'tipo': 'CONECTADO', 'estadisticas': estado['estadisticas'], 'ultimo_evento': estado['ultimo_evento']})}\n\n"
             while True:
                 msg = q.get()
@@ -167,13 +188,13 @@ def sse_stream():
 def main():
     ip = obtener_ip_local()
     port = 5050
-    print("\n" + "=" * 60)
-    print("✨ SERVIDOR DE DINÁMICA QR Y VISOR EN VIVO INICIADO ✨")
-    print("=" * 60)
-    print(f"📱 URL para los Celulares (Escanear):  http://{ip}:{port}/jugar")
-    print(f"🖥️  URL para la Pantalla / TV (Visor):  http://localhost:{port}/visor")
-    print(f"📁 Modo local en esta máquina:        http://127.0.0.1:{port}/visor")
-    print("=" * 60 + "\n")
+    print("\n" + "=" * 65)
+    print("✨ DINÁMICA DEL DADO COOSAJO MICOOPE - SERVIDOR INICIADO ✨")
+    print("=" * 65)
+    print(f"🖥️  MONITOR (TV / Pantalla):       http://localhost:{port}/  (o /monitor)")
+    print(f"📱 PARTICIPANTES (Escanear):     http://{ip}:{port}/jugar")
+    print(f"⚙️  ADMIN (Resetear conteo):       http://localhost:{port}/admin")
+    print("=" * 65 + "\n")
     app.run(host="0.0.0.0", port=port, debug=False)
 
 

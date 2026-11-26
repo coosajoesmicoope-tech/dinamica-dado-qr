@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Dinámica del Dado COOSAJO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,900;1,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-dark: #010f35;
+      --blue-mid: #0037a8;
+      --green-neon: #00e626;
+      --cyan: #00d5ff;
+      --gold: #ffcc00;
+      --red: #ff3344;
+      --white: #ffffff;
+      --card-bg: rgba(2, 20, 68, 0.85);
+      --border: rgba(0, 230, 38, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Montserrat', system-ui, sans-serif;
+      min-height: 100vh;
+      background: var(--blue-dark) url('fondo_estilo.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--white);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      z-index: 10;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-left img {
+      max-height: 55px;
+      filter: drop-shadow(0 2px 10px rgba(0, 230, 38, 0.4));
+    }
+
+    .header-title h1 {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .header-title p {
+      font-size: 0.82rem;
+      color: var(--green-neon);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    /* BARRA DE ACCIONES RÁPIDAS */
+    .quick-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-nav {
+      background: rgba(1, 16, 52, 0.8);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover {
+      background: rgba(0, 64, 192, 0.5);
+      border-color: var(--green-neon);
+    }
+
+    .btn-danger {
+      background: rgba(180, 20, 30, 0.85);
+      border: 1px solid var(--red);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 50, 60, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: var(--red);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 50, 60, 0.6);
+    }
+
+    /* TARJETAS DE MÉTRICAS */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9cb5db;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 2.4rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    /* PANELES DE CONFIGURACIÓN */
+    .panel-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      padding: 26px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--green-neon);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slider-group {
+      margin-bottom: 18px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #082054;
+      accent-color: var(--green-neon);
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* TABLA DE HISTORIAL */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+
+    .history-table th {
+      text-align: left;
+      padding: 10px 12px;
+      color: #8fa5c7;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .history-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+    }
+
+    .badge-result {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-premio { background: rgba(255, 204, 0, 0.2); color: var(--gold); border: 1px solid var(--gold); }
+    .badge-promocional { background: rgba(0, 230, 38, 0.2); color: var(--green-neon); border: 1px solid var(--green-neon); }
+    .badge-gracias { background: rgba(0, 110, 255, 0.2); color: #bed2f0; border: 1px solid #4a80e0; }
+
+    /* NOTIFICACIÓN TOAST */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #00d020;
+      color: #011438;
+      padding: 14px 24px;
+      border-radius: 16px;
+      font-weight: 800;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast">✅ ¡Conteo reseteado exitosamente a 0!</div>
+
+  <div class="container">
+    
+    <header>
+      <div class="header-left">
+        <img src="logo_coosajo.png" alt="COOSAJO es MICOOPE">
+        <div class="header-title">
+          <h1>PANEL ADMINISTRATIVO</h1>
+          <p>Control del Sorteo del Dado</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- NAVEGACIÓN Y BOTÓN DE RESET -->
+    <div class="quick-nav">
+      <a href="index.html" class="btn-nav" target="_blank">
+        <span>🖥️</span> Abrir Monitor (Pantalla TV)
+      </a>
+      <a href="jugar.html" class="btn-nav" target="_blank">
+        <span>🎲</span> Probar Juego del Dado
+      </a>
+      <button class="btn-danger" onclick="confirmarReset()">
+        <span>🗑️</span> RESETEAR CONTEO A 0
+      </button>
+    </div>
+
+    <!-- TARJETAS DE MÉTRICAS EN VIVO -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Tiradas</div>
+        <div class="metric-value" id="val-total" style="color: #ffffff;">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Premios Mayores</div>
+        <div class="metric-value" id="val-premio" style="color: var(--gold);">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Promocionales</div>
+        <div class="metric-value" id="val-promocional" style="color: var(--green-neon);">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Gracias p/ Participar</div>
+        <div class="metric-value" id="val-gracias" style="color: #bed2f0;">0</div>
+      </div>
+    </div>
+
+    <!-- PANEL DE PROBABILIDADES -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>⚙️</span> Probabilidades Digitales
+        </div>
+        <span style="font-size: 0.8rem; color: #8fa5c7;">Ajuste en tiempo real</span>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>Gracias por Participar</span>
+          <span style="color: var(--green-neon);" id="lbl-prob-gracias">75%</span>
+        </div>
+        <input type="range" id="range-gracias" min="10" max="95" value="75" oninput="ajustarProbabilidad('gracias')">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>Promocional</span>
+          <span style="color: var(--cyan);" id="lbl-prob-promocional">18%</span>
+        </div>
+        <input type="range" id="range-promocional" min="1" max="50" value="18" oninput="ajustarProbabilidad('promocional')">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-header">
+          <span>Premio Mayor</span>
+          <span style="color: var(--gold);" id="lbl-prob-premio">7%</span>
+        </div>
+        <input type="range" id="range-premio" min="1" max="40" value="7" oninput="ajustarProbabilidad('premio')">
+      </div>
+
+      <div class="toggle-group">
+        <div>
+          <div style="font-weight: 700; font-size: 0.92rem;">Anti-trampa: Limitar a 1 intento por celular</div>
+          <div style="font-size: 0.78rem; color: #8fa5c7;">Evita que recarguen la página tras ver su resultado</div>
+        </div>
+        <input type="checkbox" id="check-anti-trampa" style="width: 22px; height: 22px; accent-color: var(--green-neon);" onchange="toggleAntiTrampa()">
+      </div>
+    </div>
+
+    <!-- HISTORIAL DE ESCANEOS -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>📋</span> Últimos Lanzamientos Registrados
+        </div>
+        <span style="font-size: 0.8rem; color: #8fa5c7;" id="lbl-historial-count">0 registros</span>
+      </div>
+
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Resultado</th>
+            <th>Hora</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr>
+            <td colspan="3" style="text-align: center; color: #7a8fae; padding: 20px;">
+              No hay lanzamientos registrados aún.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    const canal = new BroadcastChannel('dinamica_sorteo_channel');
+
+    let stats = {
+      total: parseInt(localStorage.getItem('stat_total') || '0'),
+      premio: parseInt(localStorage.getItem('stat_premio') || '0'),
+      promocional: parseInt(localStorage.getItem('stat_promocional') || '0'),
+      gracias: parseInt(localStorage.getItem('stat_gracias') || '0')
+    };
+
+    let prob = {
+      gracias: 75,
+      promocional: 18,
+      premio: 7
+    };
+
+    let historial = JSON.parse(localStorage.getItem('admin_historial') || '[]');
+
+    function renderizarEstadisticas() {
+      document.getElementById('val-total').textContent = stats.total;
+      document.getElementById('val-premio').textContent = stats.premio;
+      document.getElementById('val-promocional').textContent = stats.promocional;
+      document.getElementById('val-gracias').textContent = stats.gracias;
+      renderizarHistorial();
+    }
+
+    function renderizarHistorial() {
+      const tbody = document.getElementById('history-tbody');
+      document.getElementById('lbl-historial-count').textContent = `${historial.length} registros`;
+
+      if (historial.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #7a8fae; padding: 20px;">No hay lanzamientos registrados aún.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = historial.slice(0, 15).map(item => {
+        let badgeClass = 'badge-gracias';
+        if (item.resultado === 'PREMIO') badgeClass = 'badge-premio';
+        else if (item.resultado === 'PROMOCIONAL') badgeClass = 'badge-promocional';
+
+        return `
+          <tr>
+            <td style="color: #fff; font-family: monospace; font-size: 0.95rem;">#${item.folio}</td>
+            <td><span class="badge-result ${badgeClass}">${item.resultado}</span></td>
+            <td style="color: #8fa5c7;">${item.timestamp}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Escuchar tiradas en tiempo real desde los celulares
+    canal.onmessage = (event) => {
+      const data = event.data;
+      if (data.tipo === 'NUEVA_TIRADA') {
+        stats.total++;
+        if (data.resultado === 'PREMIO') stats.premio++;
+        else if (data.resultado === 'PROMOCIONAL') stats.promocional++;
+        else stats.gracias++;
+
+        historial.unshift({
+          folio: data.folio,
+          resultado: data.resultado,
+          timestamp: data.timestamp || new Date().toLocaleTimeString()
+        });
+
+        if (historial.length > 50) historial.pop();
+
+        localStorage.setItem('stat_total', stats.total);
+        localStorage.setItem('stat_premio', stats.premio);
+        localStorage.setItem('stat_promocional', stats.promocional);
+        localStorage.setItem('stat_gracias', stats.gracias);
+        localStorage.setItem('admin_historial', JSON.stringify(historial));
+
+        renderizarEstadisticas();
+      }
+    };
+
+    // Conectar con servidor si está corriendo en HTTP
+    if (window.location.protocol.startsWith('http')) {
+      fetch('/api/config')
+        .then(r => r.json())
+        .then(cfg => {
+          if (cfg.estadisticas) {
+            stats.total = cfg.estadisticas.total || 0;
+            stats.premio = cfg.estadisticas.premio || 0;
+            stats.promocional = cfg.estadisticas.promocional || 0;
+            stats.gracias = cfg.estadisticas.gracias || 0;
+            renderizarEstadisticas();
+          }
+        }).catch(() => {});
+    }
+
+    // --- RESETEAR CONTEO A CERO ---
+    function confirmarReset() {
+      if (confirm('⚠️ ¿Estás seguro de que deseas reiniciar todos los contadores a CERO?\n\nEsta acción borrará el conteo en este panel y en la pantalla de TV.')) {
+        stats = { total: 0, premio: 0, promocional: 0, gracias: 0 };
+        historial = [];
+
+        localStorage.setItem('stat_total', '0');
+        localStorage.setItem('stat_premio', '0');
+        localStorage.setItem('stat_promocional', '0');
+        localStorage.setItem('stat_gracias', '0');
+        localStorage.setItem('admin_historial', '[]');
+        localStorage.removeItem('resultado_previo');
+
+        // Notificar al monitor (index.html) en tiempo real
+        canal.postMessage({ tipo: 'RESET_ESTADISTICAS' });
+
+        if (window.location.protocol.startsWith('http')) {
+          fetch('/api/reset', { method: 'POST' }).catch(() => {});
+        }
+
+        renderizarEstadisticas();
+        mostrarToast('✅ ¡Conteo reseteado exitosamente a 0!');
+      }
+    }
+
+    function mostrarToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function ajustarProbabilidad(tipo) {
+      const gInput = document.getElementById('range-gracias');
+      const pInput = document.getElementById('range-promocional');
+      const prInput = document.getElementById('range-premio');
+
+      let g = parseInt(gInput.value);
+      let p = parseInt(pInput.value);
+      let pr = parseInt(prInput.value);
+
+      if (tipo === 'gracias') {
+        const restante = 100 - g;
+        pr = Math.max(1, Math.round(restante * 0.28));
+        p = restante - pr;
+      } else if (tipo === 'premio') {
+        pr = Math.min(pr, 40);
+        const restante = 100 - pr;
+        p = Math.min(p, restante - 10);
+        g = restante - p;
+      } else if (tipo === 'promocional') {
+        const restante = 100 - p;
+        pr = Math.min(pr, restante - 10);
+        g = restante - pr;
+      }
+
+      prob.gracias = g;
+      prob.promocional = p;
+      prob.premio = pr;
+
+      gInput.value = g;
+      pInput.value = p;
+      prInput.value = pr;
+
+      document.getElementById('lbl-prob-gracias').textContent = g + '%';
+      document.getElementById('lbl-prob-promocional').textContent = p + '%';
+      document.getElementById('lbl-prob-premio').textContent = pr + '%';
+
+      canal.postMessage({ tipo: 'UPDATE_CONFIG', prob: prob });
+    }
+
+    function toggleAntiTrampa() {
+      const val = document.getElementById('check-anti-trampa').checked;
+      localStorage.setItem('anti_trampa', val);
+      canal.postMessage({ tipo: 'UPDATE_ANTI_TRAMPA', activo: val });
+      mostrarToast(val ? '🔒 Anti-trampa activado (1 intento)' : '🔓 Modo libre activado');
+    }
+
+    renderizarEstadisticas();
+  </script>
+</body>
+</html>

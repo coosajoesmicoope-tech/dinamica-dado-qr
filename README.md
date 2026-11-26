@@ -1,48 +1,40 @@
-# 📱 Dinámica QR Interactiva y Visor en Vivo para TV
+# 🎲 Dinámica Interactiva del Dado COOSAJO es MICOOPE
 
-Solución integral lista para eventos y stands con la paleta de colores y estilo oficial (Azul Real `#0040c0`, Verde Neón `#00e626`, ondas y estrellas brillantes).
-
----
-
-## ⚡ ¿Cómo Funciona la Dinámica?
-
-1. **Escaneo Automático:**
-   * La persona apunta su celular al **Código QR**.
-   * **¡Arranca de inmediato!** No necesita darle clic a ningún botón; en cuanto carga la página, la ruleta empieza a girar automáticamente.
-2. **Sincronización en Vivo con la Pantalla (TV / Proyector):**
-   * Mientras el celular de la persona gira la ruleta, **la pantalla de TV que estás proyectando reacciona al mismo tiempo en tiempo real**.
-   * Al revelar el resultado, la pantalla grande anuncia en letras gigantes: **¡PREMIO!** (con confeti y fanfarria), **PROMOCIONAL** o **GRACIAS POR PARTICIPAR**.
-3. **Probabilidades Ponderadas:**
-   * **75%**: *Gracias por participar* (Sale la gran mayoría de veces).
-   * **18%**: *Promocional* (Souvenirs / artículos).
-   * **7%**: *Premio* (Premio mayor).
+Sistema integral para eventos y dinámicas con dado físico de 6 caras, sincronización en vivo y pantalla de televisión.
 
 ---
 
-## 🚀 Cómo Usarlo
+## 📂 Estructura de los 3 Módulos Separados
 
-### Opción A: Prueba Rápida en tu Mac (Sin configurar nada)
-1. Abre en tu navegador la pantalla de televisión:
-   👉 **[`visor.html`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/visor.html)** (Pásalo a pantalla completa o a tu TV/Monitor con HDMI).
-2. Abre en otra pestaña o ventana el juego del celular:
-   👉 **[`index.html`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/index.html)**.
-3. Verás que en cuanto abre `index.html`, **empieza a sortear solo** y el visor de la pantalla reacciona en vivo simultáneamente.
-
----
-
-### Opción B: Evento en Vivo (Celulares en la red Wi-Fi y Pantalla Gigante)
-1. En la carpeta `dinamica_qr`, haz doble clic sobre el archivo ejecutable:
-   👉 **[`iniciar_pantalla.command`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/iniciar_pantalla.command)**.
-2. Se abrirá una ventana que te indicará la dirección IP de tu computadora (por ejemplo: `http://192.168.1.50:5050`).
-3. En tu pantalla grande o TV abre:
-   `http://localhost:5050/visor`
-4. ¡Cualquier persona que escanee el QR desde su teléfono en la misma red Wi-Fi participará automáticamente y se verá reflejado en la pantalla de TV al instante!
+| Archivo | Rol | Descripción |
+| :--- | :--- | :--- |
+| **`index.html`** | 🖥️ **EL MONITOR** | **Pantalla gigante para televisor / proyector** (16:9). Muestra el dado 3D gigante rodando en sincronía en el centro, la fanfarria, el confeti y los marcadores en vivo. **No tiene código QR** (solo dice *"🎲 LANZA EL DADO Y ESCANEA EL QR 🎲"*). |
+| **`jugar.html`** | 📱 **DONDE ESTÁN LOS DATOS** | **Página móvil para el participante**. Se abre al escanear la cara del dado que cayó, hace rodar el dado 3D automáticamente y revela el resultado con folio de seguridad. |
+| **`admin.html`** | ⚙️ **ADMINISTRADOR** | **Panel de control**. Incluye el botón rojo **"🗑️ RESETEAR CONTEO A 0"**, métricas en vivo, historial detallado de tiradas y control de probabilidades. |
 
 ---
 
-## 📁 Archivos Disponibles
+## 🚀 Cómo Iniciar y Usar
 
-* 🖥️ **[`visor.html`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/visor.html)**: Pantalla 16:9 para proyector o televisor.
-* 📱 **[`index.html`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/index.html)**: Vista para el teléfono del usuario (auto-arranque sin clics).
-* ⚙️ **[`servidor_dinamica.py`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/servidor_dinamica.py)**: Servidor en tiempo real con Server-Sent Events.
-* 📦 **[`codigos_qr_generados/`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/mi-proyecto/dinamica_qr/codigos_qr_generados/)**: Carpeta con los códigos QR en PNG transparente y SVG vectorial.
+### 1. Servidor Local en Vivo (Para eventos con Wi-Fi)
+Haz doble clic en:
+👉 **[`iniciar_pantalla.command`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/dinamica-dado-qr/iniciar_pantalla.command)**
+
+Se iniciará el servidor local y te mostrará:
+* 🖥️ **Monitor (TV):** `http://localhost:5050/` (o `index.html`)
+* 📱 **Móvil (Participantes):** `http://<TU_IP>:5050/jugar`
+* ⚙️ **Admin (Resetear):** `http://localhost:5050/admin`
+
+---
+
+### 2. Uso Directo en tu Mac (Sin servidor, sincronización local)
+Puedes abrir directamente en pestañas de tu navegador:
+1. 🖥️ **[Abrir Monitor (index.html)](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/dinamica-dado-qr/index.html)**
+2. 📱 **[Abrir Juego Móvil (jugar.html)](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/dinamica-dado-qr/jugar.html)**
+3. ⚙️ **[Abrir Panel Admin (admin.html)](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/dinamica-dado-qr/admin.html)**
+
+---
+
+## 🖨️ Plantilla Imprimible del Dado de 6 Caras
+
+* **[`plantilla_imprimible_dado_6_caras.png`](file:///Users/sjejacome/Library/CloudStorage/OneDrive-CooperativadeAhorroyCreditoIntegralSanJose/Documentos/dinamica-dado-qr/codigos_qr_generados/plantilla_imprimible_dado_6_caras.png)**: Hoja de 300 DPI lista para imprimir en tamaño carta/A4, recortar los 6 cuadrados y pegarlos en las 6 caras del dado físico.
