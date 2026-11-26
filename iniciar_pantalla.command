@@ -5,5 +5,11 @@ echo "=========================================================="
 echo "✨ INICIANDO SERVIDOR DE DINÁMICA QR Y VISOR DE TV ✨"
 echo "=========================================================="
 echo ""
-echo "Conectando..."
-../venv/bin/python3 servidor_dinamica.py
+
+if [ -f "../mi-proyecto/venv/bin/python3" ]; then
+    ../mi-proyecto/venv/bin/python3 servidor_dinamica.py
+elif [ -f "./venv/bin/python3" ]; then
+    ./venv/bin/python3 servidor_dinamica.py
+else
+    python3 servidor_dinamica.py
+fi
