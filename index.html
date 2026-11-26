@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dinámica Interactiva - Sorteo QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,800;0,900;1,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --coosajo-blue-dark: #021342;
+      --coosajo-blue-primary: #0040c0;
+      --coosajo-blue-light: #1670f5;
+      --coosajo-green-neon: #00e626;
+      --coosajo-green-deep: #00a818;
+      --coosajo-cyan: #00d5ff;
+      --coosajo-gold: #ffcc00;
+      --white: #ffffff;
+      --glass-bg: rgba(2, 20, 70, 0.78);
+      --glass-border: rgba(0, 230, 38, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      background: var(--coosajo-blue-dark) url('fondo_estilo.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Overlay sutil para realzar el contraste */
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 30%, rgba(0, 64, 192, 0.25) 0%, rgba(1, 10, 35, 0.75) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Estrellas brillantes animadas */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      animation: pulseGlow 2.5s infinite ease-in-out;
+      z-index: 1;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.2) rotate(15deg); filter: drop-shadow(0 0 10px #00e626); }
+    }
+
+    /* Barra Superior / Header */
+    header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 600px;
+      padding: 24px 20px 10px;
+      text-align: center;
+    }
+
+    .brand-title {
+      font-size: 0.95rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--coosajo-green-neon);
+      font-weight: 800;
+      text-shadow: 0 0 12px rgba(0, 230, 38, 0.6);
+      margin-bottom: 6px;
+    }
+
+    .main-heading {
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #ffffff 40%, var(--coosajo-cyan) 80%, var(--coosajo-green-neon) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(0, 70, 200, 0.4);
+    }
+
+    .sub-heading {
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.75);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Contenedor Principal / Tarjeta Interactiva */
+    main {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .game-card {
+      width: 100%;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 30px 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 10, 40, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .game-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(0, 230, 38, 0.12), transparent 30%);
+      animation: rotateBorder 8s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes rotateBorder {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* ESCENA DEL DADO 3D ANIMADO */
+    .dice-scene {
+      width: 140px;
+      height: 140px;
+      perspective: 700px;
+      margin: 10px auto 20px;
+    }
+
+    .dice-cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 2.4s cubic-bezier(0.18, 0.9, 0.25, 1);
+    }
+
+    .dice-cube.rolling {
+      animation: diceRollTumble 0.16s infinite linear;
+    }
+
+    @keyframes diceRollTumble {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+      50% { transform: rotateX(180deg) rotateY(270deg) rotateZ(90deg); }
+      100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+    }
+
+    .dice-face {
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(2, 28, 85, 0.95) 0%, rgba(0, 10, 35, 0.98) 100%);
+      border: 2.5px solid var(--coosajo-green-neon);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 25px rgba(0, 70, 220, 0.6), 0 0 20px rgba(0, 230, 38, 0.4);
+      font-weight: 900;
+      text-align: center;
+      padding: 10px;
+      user-select: none;
+    }
+
+    .dice-face.front  { transform: rotateY(  0deg) translateZ(70px); }
+    .dice-face.back   { transform: rotateY(180deg) translateZ(70px); }
+    .dice-face.right  { transform: rotateY( 90deg) translateZ(70px); }
+    .dice-face.left   { transform: rotateY(-90deg) translateZ(70px); }
+    .dice-face.top    { transform: rotateX( 90deg) translateZ(70px); }
+    .dice-face.bottom { transform: rotateX(-90deg) translateZ(70px); }
+
+    .face-icon {
+      font-size: 2.2rem;
+      margin-bottom: 4px;
+    }
+    .face-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.15;
+    }
+
+    /* Contenedor de la Animación de Revelado */
+    .slot-display {
+      position: relative;
+      background: rgba(1, 14, 48, 0.9);
+      border: 2px solid rgba(0, 230, 38, 0.4);
+      border-radius: 20px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 64, 192, 0.4);
+    }
+
+    .slot-text {
+      font-size: 1.6rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.25;
+      transition: transform 0.1s ease, opacity 0.1s ease;
+      color: #fff;
+    }
+
+    .slot-text.shuffling {
+      animation: shuffleBounce 0.09s infinite alternate;
+      color: var(--coosajo-cyan);
+      filter: blur(0.4px);
+    }
+
+    @keyframes shuffleBounce {
+      0% { transform: translateY(-4px) scale(0.98); opacity: 0.85; }
+      100% { transform: translateY(4px) scale(1.02); opacity: 1; }
+    }
+
+    /* Estilos para el Resultado Final */
+    .result-premio {
+      color: var(--coosajo-gold) !important;
+      text-shadow: 0 0 25px rgba(255, 204, 0, 0.8), 0 0 50px rgba(0, 230, 38, 0.5);
+      animation: popWinner 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .result-promocional {
+      color: var(--coosajo-green-neon) !important;
+      text-shadow: 0 0 20px rgba(0, 230, 38, 0.7);
+      animation: popWinner 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .result-gracias {
+      color: #e0e8ff !important;
+      text-shadow: 0 0 12px rgba(22, 112, 245, 0.5);
+      animation: popWinner 0.5s ease-out forwards;
+    }
+
+    @keyframes popWinner {
+      0% { transform: scale(0.4); opacity: 0; }
+      70% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Mensaje descriptivo adicional */
+    .result-details {
+      min-height: 54px;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 24px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .validation-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 14px;
+      background: rgba(0, 230, 38, 0.15);
+      border: 1px dashed var(--coosajo-green-neon);
+      border-radius: 30px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--coosajo-green-neon);
+    }
+
+    /* Botón de Acción Principal */
+    .btn-action {
+      position: relative;
+      width: 100%;
+      padding: 18px 24px;
+      font-family: inherit;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #011438;
+      background: linear-gradient(135deg, #00ff40 0%, #00d020 60%, #00a014 100%);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(0, 230, 38, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.5);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      overflow: hidden;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(0, 230, 38, 0.6);
+    }
+
+    .btn-action:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 15px rgba(0, 230, 38, 0.4);
+    }
+
+    .btn-action:disabled {
+      background: #2a3d60;
+      color: #7b90b2;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-action::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+      transform: rotate(25deg);
+      animation: btnShine 3.5s infinite ease-in-out;
+    }
+
+    @keyframes btnShine {
+      0%, 70% { transform: translateX(-150%) rotate(25deg); }
+      100% { transform: translateX(150%) rotate(25deg); }
+    }
+
+    /* Barra Inferior / Enlaces de Administración y QR */
+    footer {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 500px;
+      padding: 16px 20px 24px;
+      display: flex;
+      justify-content: space-around;
+      gap: 12px;
+    }
+
+    .btn-subtle {
+      background: rgba(2, 20, 70, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-subtle:hover {
+      background: rgba(0, 64, 192, 0.4);
+      border-color: var(--coosajo-green-neon);
+      color: #fff;
+    }
+
+    /* Modales (Configuración y Códigos QR) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(1, 10, 30, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: var(--coosajo-blue-dark);
+      border: 2px solid var(--coosajo-green-neon);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 28px 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+      position: relative;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--coosajo-green-neon);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+
+    /* Formularios de Configuración */
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #d0e0ff;
+    }
+
+    .form-group label span.val {
+      color: var(--coosajo-green-neon);
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #0b2258;
+      accent-color: var(--coosajo-green-neon);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 18px 0;
+      text-align: center;
+    }
+
+    .stat-box {
+      background: rgba(0, 30, 90, 0.6);
+      border: 1px solid rgba(0, 230, 38, 0.3);
+      border-radius: 14px;
+      padding: 12px 8px;
+    }
+
+    .stat-num {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--coosajo-green-neon);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #9cb5db;
+      margin-top: 4px;
+    }
+
+    /* Galería de QRs Descargables */
+    .qr-gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 15px;
+    }
+
+    .qr-card {
+      background: rgba(0, 20, 60, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .qr-card:hover {
+      border-color: var(--coosajo-green-neon);
+      transform: translateY(-2px);
+    }
+
+    .qr-preview-box {
+      width: 100%;
+      aspect-ratio: 1;
+      background: repeating-conic-gradient(#051845 0% 25%, #08215c 0% 50%) 50% / 16px 16px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      padding: 8px;
+    }
+
+    .qr-preview-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .qr-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .btn-download {
+      display: inline-block;
+      width: 100%;
+      padding: 8px 10px;
+      background: #0044cc;
+      border: 1px solid var(--coosajo-green-neon);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .btn-download:hover {
+      background: var(--coosajo-green-neon);
+      color: #021342;
+    }
+
+    /* Confeti Canvas */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-overlay"></div>
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Estrellas y destellos decorativos -->
+  <svg class="sparkle" style="top: 8%; right: 12%; width: 28px; height: 28px;" viewBox="0 0 24 24" fill="#ffffff">
+    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z"/>
+  </svg>
+  <svg class="sparkle" style="top: 25%; left: 8%; width: 22px; height: 22px;" viewBox="0 0 24 24" fill="#00e626">
+    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z"/>
+  </svg>
+  <svg class="sparkle" style="bottom: 18%; right: 8%; width: 24px; height: 24px;" viewBox="0 0 24 24" fill="#00e626">
+    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z"/>
+  </svg>
+  <svg class="sparkle" style="bottom: 22%; left: 10%; width: 20px; height: 20px;" viewBox="0 0 24 24" fill="#ffffff">
+    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z"/>
+  </svg>
+
+  <!-- Encabezado -->
+  <header>
+    <img src="logo_coosajo.png" alt="COOSAJO es MICOOPE" style="max-width: 250px; width: 80%; height: auto; margin-bottom: 10px; filter: drop-shadow(0 2px 12px rgba(0, 230, 38, 0.5));">
+    <div class="brand-title">🎲 LANZA EL DADO Y ESCANEA EL QR 🎲</div>
+    <h1 class="main-heading">DESCUBRE TU SUERTE</h1>
+    <p class="sub-heading">El dado rodará en pantalla y revelará tu sorpresa</p>
+  </header>
+
+  <!-- Contenedor del Juego -->
+  <main>
+    <div class="game-card">
+      
+      <!-- Escena del Dado 3D -->
+      <div class="dice-scene">
+        <div class="dice-cube" id="dice-cube">
+          <div class="dice-face front">
+            <div class="face-icon">💙</div>
+            <div class="face-label">GRACIAS</div>
+          </div>
+          <div class="dice-face back">
+            <div class="face-icon">✨</div>
+            <div class="face-label">GRACIAS</div>
+          </div>
+          <div class="dice-face right">
+            <div class="face-icon">🤝</div>
+            <div class="face-label">GRACIAS</div>
+          </div>
+          <div class="dice-face left">
+            <div class="face-icon">🌟</div>
+            <div class="face-label">GRACIAS</div>
+          </div>
+          <div class="dice-face top" style="border-color: var(--coosajo-gold);">
+            <div class="face-icon">🏆</div>
+            <div class="face-label" style="color: var(--coosajo-gold);">¡PREMIO!</div>
+          </div>
+          <div class="dice-face bottom" style="border-color: var(--coosajo-cyan);">
+            <div class="face-icon">🎁</div>
+            <div class="face-label" style="color: var(--coosajo-cyan);">PROMO</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pantalla del resultado -->
+      <div class="slot-display" id="slot-display" style="height: 100px; margin-bottom: 16px;">
+        <div class="slot-text" id="slot-text">¡LANZANDO EL DADO!</div>
+      </div>
+
+      <!-- Texto descriptivo y código de verificación -->
+      <div class="result-details" id="result-details">
+        <p id="result-message">Presiona el botón verde para iniciar la dinámica.</p>
+        <div id="validation-container" style="display: none;">
+          <span class="validation-badge" id="validation-code">FOLIO: #PR-0000</span>
+        </div>
+      </div>
+
+      <!-- Botón de Acción -->
+      <button class="btn-action" id="btn-spin" onclick="iniciarSorteo()">
+        ¡TOCAR PARA JUGAR!
+      </button>
+
+    </div>
+  </main>
+
+  <!-- Pie de página / Accesos rápidos -->
+  <footer>
+    <button class="btn-subtle" onclick="abrirModal('modal-qrs')">
+      <span>📱</span> Descargar Códigos QR
+    </button>
+    <button class="btn-subtle" onclick="abrirModal('modal-config')">
+      <span>⚙️</span> Probabilidades & Ajustes
+    </button>
+  </footer>
+
+  <!-- MODAL: Ajustes de Probabilidades -->
+  <div class="modal-overlay" id="modal-config">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Ajustes del Sorteo</div>
+        <button class="modal-close" onclick="cerrarModal('modal-config')">&times;</button>
+      </div>
+
+      <p style="font-size: 0.85rem; color: #a0b8df; margin-bottom: 20px;">
+        Configura los porcentajes de aparición de cada resultado. La suma debe ser 100%.
+      </p>
+
+      <div class="form-group">
+        <label>
+          <span>1. Gracias por Participar (Mayoría)</span>
+          <span class="val" id="val-gracias">75%</span>
+        </label>
+        <input type="range" id="range-gracias" min="10" max="95" value="75" oninput="actualizarProbabilidades('gracias')">
+      </div>
+
+      <div class="form-group">
+        <label>
+          <span>2. Promocional (Artículos/Souvenirs)</span>
+          <span class="val" id="val-promocional">18%</span>
+        </label>
+        <input type="range" id="range-promocional" min="1" max="50" value="18" oninput="actualizarProbabilidades('promocional')">
+      </div>
+
+      <div class="form-group">
+        <label>
+          <span>3. Premio (Premio Mayor)</span>
+          <span class="val" id="val-premio">7%</span>
+        </label>
+        <input type="range" id="range-premio" min="1" max="40" value="7" oninput="actualizarProbabilidades('premio')">
+      </div>
+
+      <!-- Estadísticas de la sesión -->
+      <div class="modal-title" style="font-size: 1rem; margin-top: 24px;">📊 Registro de Tiradas</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-num" id="stat-gracias">0</div>
+          <div class="stat-label">Gracias</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-promocional" style="color: var(--coosajo-cyan);">0</div>
+          <div class="stat-label">Promocional</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="stat-premio" style="color: var(--coosajo-gold);">0</div>
+          <div class="stat-label">Premios</div>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight: 700; font-size: 0.9rem;">Limitar a 1 intento por persona</div>
+          <div style="font-size: 0.75rem; color: #8fa5c7;">Evita que recarguen la página para ganar</div>
+        </div>
+        <input type="checkbox" id="check-anti-trampa" style="width: 20px; height: 20px; accent-color: var(--coosajo-green-neon);" onchange="toggleAntiTrampa()">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn-action" style="padding: 12px; font-size: 0.9rem;" onclick="reiniciarPartida()">
+          🔄 Probar de Nuevo
+        </button>
+        <button class="btn-subtle" style="width: 100%; justify-content: center;" onclick="resetEstadisticas()">
+          Borrar Contadores
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: Códigos QR Transparentes -->
+  <div class="modal-overlay" id="modal-qrs">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">📱 Códigos QR Transparentes</div>
+        <button class="modal-close" onclick="cerrarModal('modal-qrs')">&times;</button>
+      </div>
+
+      <p style="font-size: 0.85rem; color: #a0b8df; margin-bottom: 12px;">
+        Cada código cuenta con <strong>fondo 100% transparente</strong> y la estética de ondas y estrellas.
+      </p>
+
+      <div class="qr-card" style="margin-bottom: 16px; border: 2px solid var(--coosajo-gold);">
+        <div class="qr-title" style="color: var(--coosajo-gold); font-size: 0.9rem;">
+          🎲 HOJA IMPRIMIBLE PARA LAS 6 CARAS DEL DADO
+        </div>
+        <p style="font-size: 0.75rem; color: #bed2f0; margin-bottom: 8px;">
+          Plantilla lista para imprimir en tamaño carta/A4, recortar los 6 cuadrados y pegarlos en las 6 caras de tu dado físico: 4 caras de Gracias, 1 Promocional y 1 Premio.
+        </p>
+        <a href="codigos_qr_generados/plantilla_imprimible_dado_6_caras.png" download="Plantilla_Dado_6_Caras.png" class="btn-download" style="background: linear-gradient(135deg, #00d020, #008810); color: #fff; font-size: 0.82rem; padding: 10px;">
+          🖨️ Descargar Plantilla Imprimible del Dado (Alta Resolución)
+        </a>
+      </div>
+
+      <div class="qr-card" style="margin-bottom: 16px; border: 2px solid var(--coosajo-green-neon);">
+        <div class="qr-title" style="color: var(--coosajo-green-neon); font-size: 0.9rem;">
+          ⭐ QR MAESTRO (Acceso a esta Dinámica)
+        </div>
+        <p style="font-size: 0.75rem; color: #bed2f0; margin-bottom: 8px;">
+          Este es el QR que imprimes en stands, afiches o pantallas para que las personas escaneen y entren a jugar.
+        </p>
+        <div class="qr-preview-box" style="height: 160px;">
+          <img src="codigos_qr_generados/qr_maestro_dinamica.png" alt="QR Maestro">
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <a href="codigos_qr_generados/qr_maestro_dinamica.png" download="QR_Maestro_Dinamica.png" class="btn-download">Descargar PNG</a>
+          <a href="codigos_qr_generados/qr_maestro_dinamica_blanco.png" download="QR_Maestro_Dinamica_Blanco.png" class="btn-download" style="background: #022060;">Versión Blanca</a>
+          <a href="codigos_qr_generados/qr_maestro_dinamica.svg" download="QR_Maestro_Dinamica.svg" class="btn-download" style="background: #007520;">SVG Vector</a>
+        </div>
+      </div>
+
+      <div class="modal-title" style="font-size: 0.95rem; margin-top: 14px;">QRs Individuales por Texto:</div>
+      <div class="qr-gallery">
+
+        <!-- QR 1: PREMIO -->
+        <div class="qr-card">
+          <div class="qr-title" style="color: var(--coosajo-gold);">1. PREMIO</div>
+          <div class="qr-preview-box">
+            <img src="codigos_qr_generados/qr_1_premio.png" alt="QR Premio">
+          </div>
+          <a href="codigos_qr_generados/qr_1_premio.png" download="QR_1_PREMIO.png" class="btn-download">PNG Color</a>
+          <a href="codigos_qr_generados/qr_1_premio_blanco.png" download="QR_1_PREMIO_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
+        </div>
+
+        <!-- QR 2: GRACIAS POR PARTICIPAR -->
+        <div class="qr-card">
+          <div class="qr-title">2. GRACIAS</div>
+          <div class="qr-preview-box">
+            <img src="codigos_qr_generados/qr_2_gracias_por_participar.png" alt="QR Gracias">
+          </div>
+          <a href="codigos_qr_generados/qr_2_gracias_por_participar.png" download="QR_2_GRACIAS.png" class="btn-download">PNG Color</a>
+          <a href="codigos_qr_generados/qr_2_gracias_por_participar_blanco.png" download="QR_2_GRACIAS_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
+        </div>
+
+        <!-- QR 3: PROMOCIONAL -->
+        <div class="qr-card">
+          <div class="qr-title" style="color: var(--coosajo-green-neon);">3. PROMOCIONAL</div>
+          <div class="qr-preview-box">
+            <img src="codigos_qr_generados/qr_3_promocional.png" alt="QR Promocional">
+          </div>
+          <a href="codigos_qr_generados/qr_3_promocional.png" download="QR_3_PROMOCIONAL.png" class="btn-download">PNG Color</a>
+          <a href="codigos_qr_generados/qr_3_promocional_blanco.png" download="QR_3_PROMOCIONAL_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- SINCRONIZACIÓN CON EL VISOR EN VIVO (TV) ---
+    const canalLocal = new BroadcastChannel('dinamica_sorteo_channel');
+
+    function notificarVisorInicio() {
+      canalLocal.postMessage({ tipo: 'INICIANDO_SORTEO' });
+      if (window.location.protocol.startsWith('http')) {
+        fetch('/api/iniciando_escaneo', { method: 'POST' }).catch(() => {});
+      }
+    }
+
+    function notificarVisorResultado(resultado, folio, timestamp) {
+      canalLocal.postMessage({
+        tipo: 'NUEVA_TIRADA',
+        resultado: resultado,
+        folio: folio,
+        timestamp: timestamp
+      });
+      if (window.location.protocol.startsWith('http')) {
+        fetch('/api/tirada', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resultado, folio })
+        }).catch(() => {});
+      }
+    }
+
+    // --- ESTADO Y PROBABILIDADES ---
+    let prob = {
+      gracias: 75,
+      promocional: 18,
+      premio: 7
+    };
+
+    let stats = {
+      gracias: parseInt(localStorage.getItem('stat_gracias') || '0'),
+      promocional: parseInt(localStorage.getItem('stat_promocional') || '0'),
+      premio: parseInt(localStorage.getItem('stat_premio') || '0'),
+    };
+
+    let isSpinning = false;
+    let antiTrampaActivo = localStorage.getItem('anti_trampa') === 'true';
+
+    // Cargar estadísticas al inicio
+    document.getElementById('stat-gracias').textContent = stats.gracias;
+    document.getElementById('stat-promocional').textContent = stats.promocional;
+    document.getElementById('stat-premio').textContent = stats.premio;
+    document.getElementById('check-anti-trampa').checked = antiTrampaActivo;
+
+    // --- AUTO-INICIO INMEDIATO AL ESCANEAR EL QR ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const previo = localStorage.getItem('resultado_previo');
+      if (antiTrampaActivo && previo) {
+        mostrarResultadoGuardado(JSON.parse(previo));
+      } else {
+        // Iniciar sorteo automáticamente tras un breve instante (500ms)
+        setTimeout(() => {
+          iniciarSorteo();
+        }, 500);
+      }
+    });
+
+    // --- SÍNTESIS DE SONIDO WEB AUDIO API (100% OFFLINE) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTickSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320 + Math.random() * 200, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+      } catch (e) {}
+    }
+
+    function playWinSound() {
+      try {
+        initAudio();
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // Acorde Mayor Triunfal C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
+          gain.gain.setValueAtTime(0.18, audioCtx.currentTime + idx * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.1 + 0.7);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + idx * 0.1);
+          osc.stop(audioCtx.currentTime + idx * 0.1 + 0.75);
+        });
+      } catch (e) {}
+    }
+
+    function playPromoSound() {
+      try {
+        initAudio();
+        const notes = [440, 554.37, 659.25];
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.08 + 0.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + idx * 0.08);
+          osc.stop(audioCtx.currentTime + idx * 0.08 + 0.45);
+        });
+      } catch (e) {}
+    }
+
+    // --- SONIDO DE DADO RODANDO ---
+    function playDiceRollSound() {
+      try {
+        initAudio();
+        // Secuencia de pequeños golpes secos de dado rebotando
+        for (let i = 0; i < 6; i++) {
+          setTimeout(() => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140 + Math.random() * 100, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+          }, i * 160 + Math.random() * 40);
+        }
+      } catch (e) {}
+    }
+
+    // --- LÓGICA DE PROBABILIDAD PONDERADA / LECTURA DE CARA ESCANEADA ---
+    function obtenerResultado() {
+      // 1. Si la cara del dado tiene parámetro en la URL (?resultado= o ?cara=)
+      const params = new URLSearchParams(window.location.search);
+      const paramResultado = (params.get('resultado') || params.get('cara') || params.get('r') || '').toLowerCase();
+
+      if (paramResultado.includes('premio')) return 'PREMIO';
+      if (paramResultado.includes('promo')) return 'PROMOCIONAL';
+      if (paramResultado.includes('gracias')) return 'GRACIAS POR PARTICIPAR';
+
+      // 2. Si es QR aleatorio digital, aplicar probabilidad ponderada
+      const rand = Math.random() * 100;
+      if (rand < prob.premio) {
+        return 'PREMIO';
+      } else if (rand < prob.premio + prob.promocional) {
+        return 'PROMOCIONAL';
+      } else {
+        return 'GRACIAS POR PARTICIPAR';
+      }
+    }
+
+    // --- ANIMACIÓN DE DADO 3D Y SORTEO ---
+    function iniciarSorteo() {
+      if (isSpinning) return;
+      initAudio();
+      notificarVisorInicio();
+
+      const btn = document.getElementById('btn-spin');
+      const slotText = document.getElementById('slot-text');
+      const resultMessage = document.getElementById('result-message');
+      const validationContainer = document.getElementById('validation-container');
+      const cube = document.getElementById('dice-cube');
+
+      isSpinning = true;
+      btn.disabled = true;
+      btn.textContent = '¡DADO RODANDO...!';
+      validationContainer.style.display = 'none';
+      resultMessage.textContent = 'El dado está cayendo... ¡Mucha suerte!';
+
+      playDiceRollSound();
+
+      // Iniciar giro descontrolado en 3D
+      cube.classList.add('rolling');
+      slotText.className = 'slot-text shuffling';
+      slotText.textContent = 'RODANDO DADO...';
+
+      // Tras 1.8 segundos, frenar en la cara ganadora
+      setTimeout(() => {
+        cube.classList.remove('rolling');
+        finalizarSorteo();
+      }, 1900);
+    }
+
+    function finalizarSorteo() {
+      const resultado = obtenerResultado();
+      const slotText = document.getElementById('slot-text');
+      const resultMessage = document.getElementById('result-message');
+      const validationContainer = document.getElementById('validation-container');
+      const validationCode = document.getElementById('validation-code');
+      const btn = document.getElementById('btn-spin');
+      const cube = document.getElementById('dice-cube');
+
+      slotText.className = 'slot-text';
+      const folio = Math.floor(1000 + Math.random() * 9000);
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      // Orientar el cubo 3D hacia la cara que cayó
+      if (resultado === 'PREMIO') {
+        cube.style.transform = 'rotateX(-90deg) rotateY(0deg)'; // Cara Superior (Top)
+        slotText.textContent = '¡PREMIO!';
+        slotText.classList.add('result-premio');
+        resultMessage.innerHTML = '🎉 <strong>¡FELICIDADES! ¡CAYÓ PREMIO!</strong><br>Muestra esta pantalla al encargado para reclamar tu premio.';
+        validationCode.textContent = `GANADOR: #PR-${folio} • ${timestamp}`;
+        validationContainer.style.display = 'block';
+        lanzarConfeti();
+        playWinSound();
+        stats.premio++;
+      } else if (resultado === 'PROMOCIONAL') {
+        cube.style.transform = 'rotateX(90deg) rotateY(0deg)'; // Cara Inferior (Bottom)
+        slotText.textContent = 'PROMOCIONAL';
+        slotText.classList.add('result-promocional');
+        resultMessage.innerHTML = '🎁 <strong>¡CAYÓ ARTÍCULO PROMOCIONAL!</strong><br>Pasa al módulo para recibir tu souvenir.';
+        validationCode.textContent = `PROMO: #SO-${folio} • ${timestamp}`;
+        validationContainer.style.display = 'block';
+        lanzarConfetiSutil();
+        playPromoSound();
+        stats.promocional++;
+      } else {
+        cube.style.transform = 'rotateX(0deg) rotateY(0deg)'; // Cara Frontal (Front)
+        slotText.textContent = 'GRACIAS POR PARTICIPAR';
+        slotText.classList.add('result-gracias');
+        resultMessage.innerHTML = '💙 <strong>¡Muchas gracias por participar!</strong><br>Apreciamos tu visita. ¡Que disfrutes del evento!';
+        validationContainer.style.display = 'none';
+        stats.gracias++;
+      }
+
+      // Guardar estadísticas
+      localStorage.setItem('stat_gracias', stats.gracias);
+      localStorage.setItem('stat_promocional', stats.promocional);
+      localStorage.setItem('stat_premio', stats.premio);
+      document.getElementById('stat-gracias').textContent = stats.gracias;
+      document.getElementById('stat-promocional').textContent = stats.promocional;
+      document.getElementById('stat-premio').textContent = stats.premio;
+
+      // Notificar al visor en vivo en pantalla de TV
+      notificarVisorResultado(resultado, folio, timestamp);
+
+      // Si anti-trampa está activo, guardar
+      if (antiTrampaActivo) {
+        const datos = {
+          resultado: resultado,
+          folio: folio,
+          timestamp: timestamp
+        };
+        localStorage.setItem('resultado_previo', JSON.stringify(datos));
+        btn.textContent = 'PARTICIPACIÓN COMPLETADA';
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'VOLVER A PARTICIPAR';
+        btn.disabled = false;
+      }
+
+      isSpinning = false;
+    }
+
+    function mostrarResultadoGuardado(datos) {
+      const slotText = document.getElementById('slot-text');
+      const resultMessage = document.getElementById('result-message');
+      const validationContainer = document.getElementById('validation-container');
+      const validationCode = document.getElementById('validation-code');
+      const btn = document.getElementById('btn-spin');
+
+      if (datos.resultado === 'PREMIO') {
+        slotText.textContent = '¡PREMIO!';
+        slotText.className = 'slot-text result-premio';
+        resultMessage.innerHTML = '🎉 <strong>¡GANADOR REGISTRADO!</strong><br>Premio reclamable con este folio:';
+        validationCode.textContent = `GANADOR: #PR-${datos.folio} • ${datos.timestamp}`;
+        validationContainer.style.display = 'block';
+      } else if (datos.resultado === 'PROMOCIONAL') {
+        slotText.textContent = 'PROMOCIONAL';
+        slotText.className = 'slot-text result-promocional';
+        resultMessage.innerHTML = '🎁 <strong>PROMOCIONAL REGISTRADO</strong><br>Obsequio reclamable:';
+        validationCode.textContent = `PROMO: #SO-${datos.folio} • ${datos.timestamp}`;
+        validationContainer.style.display = 'block';
+      } else {
+        slotText.textContent = 'GRACIAS POR PARTICIPAR';
+        slotText.className = 'slot-text result-gracias';
+        resultMessage.innerHTML = '💙 <strong>¡Ya has participado hoy!</strong><br>Gracias por ser parte de nuestra comunidad.';
+      }
+
+      btn.textContent = 'YA HAS PARTICIPADO';
+      btn.disabled = true;
+    }
+
+    // --- REINICIAR Y AJUSTES ---
+    function reiniciarPartida() {
+      localStorage.removeItem('resultado_previo');
+      const slotText = document.getElementById('slot-text');
+      slotText.className = 'slot-text';
+      slotText.textContent = '¡LISTO PARA JUGAR!';
+      document.getElementById('result-message').textContent = 'Presiona el botón verde para iniciar la dinámica.';
+      document.getElementById('validation-container').style.display = 'none';
+      const btn = document.getElementById('btn-spin');
+      btn.textContent = '¡TOCAR PARA JUGAR!';
+      btn.disabled = false;
+      cerrarModal('modal-config');
+    }
+
+    function resetEstadisticas() {
+      if (confirm('¿Deseas reiniciar los contadores de la sesión a 0?')) {
+        stats = { gracias: 0, promocional: 0, premio: 0 };
+        localStorage.setItem('stat_gracias', '0');
+        localStorage.setItem('stat_promocional', '0');
+        localStorage.setItem('stat_premio', '0');
+        document.getElementById('stat-gracias').textContent = 0;
+        document.getElementById('stat-promocional').textContent = 0;
+        document.getElementById('stat-premio').textContent = 0;
+      }
+    }
+
+    function toggleAntiTrampa() {
+      antiTrampaActivo = document.getElementById('check-anti-trampa').checked;
+      localStorage.setItem('anti_trampa', antiTrampaActivo);
+    }
+
+    function actualizarProbabilidades(cambiado) {
+      const gInput = document.getElementById('range-gracias');
+      const pInput = document.getElementById('range-promocional');
+      const prInput = document.getElementById('range-premio');
+
+      let g = parseInt(gInput.value);
+      let p = parseInt(pInput.value);
+      let pr = parseInt(prInput.value);
+
+      // Ajuste automático suave para que la suma sea 100%
+      if (cambiado === 'gracias') {
+        const restante = 100 - g;
+        pr = Math.max(1, Math.round(restante * 0.28));
+        p = restante - pr;
+      } else if (cambiado === 'premio') {
+        pr = Math.min(pr, 40);
+        const restante = 100 - pr;
+        p = Math.min(p, restante - 10);
+        g = restante - p;
+      } else if (cambiado === 'promocional') {
+        const restante = 100 - p;
+        pr = Math.min(pr, restante - 10);
+        g = restante - pr;
+      }
+
+      prob.gracias = g;
+      prob.promocional = p;
+      prob.premio = pr;
+
+      gInput.value = g;
+      pInput.value = p;
+      prInput.value = pr;
+
+      document.getElementById('val-gracias').textContent = g + '%';
+      document.getElementById('val-promocional').textContent = p + '%';
+      document.getElementById('val-premio').textContent = pr + '%';
+    }
+
+    // --- MODALES ---
+    function abrirModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+    function cerrarModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // --- MOTOR DE CONFETI EN CANVAS (LIGERO Y SIN LIBRERÍAS EXTERNAS) ---
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationId = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function lanzarConfeti() {
+      crearParticulas(130, ['#00e626', '#ffcc00', '#00d5ff', '#ffffff', '#0040c0']);
+    }
+
+    function lanzarConfetiSutil() {
+      crearParticulas(45, ['#00e626', '#00d5ff', '#ffffff']);
+    }
+
+    function crearParticulas(cantidad, colores) {
+      for (let i = 0; i < cantidad; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 80,
+          y: canvas.height * 0.45,
+          w: Math.random() * 9 + 4,
+          h: Math.random() * 5 + 3,
+          color: colores[Math.floor(Math.random() * colores.length)],
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() * -12) - 5,
+          rotation: Math.random() * 360,
+          vrot: (Math.random() - 0.5) * 10,
+          gravity: 0.32,
+          opacity: 1
+        });
+      }
+      if (!animationId) animarConfeti();
+    }
+
+    function animarConfeti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.rotation += p.vrot;
+        p.opacity -= 0.009;
+
+        if (p.opacity <= 0 || p.y > canvas.height) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      if (particles.length > 0) {
+        animationId = requestAnimationFrame(animarConfeti);
+      } else {
+        animationId = null;
+      }
+    }
+  </script>
+</body>
+</html>
