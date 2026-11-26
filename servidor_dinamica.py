@@ -4,6 +4,10 @@ Servidor en tiempo real para Dinámica del Dado COOSAJO MICOOPE:
 - /       -> index.html (MONITOR para TV / Proyector)
 - /jugar  -> jugar.html (Juego del dado móvil)
 - /admin  -> admin.html (Panel de control y reseteo de conteo)
+
+Control de Dispositivos Únicos:
+Cuenta a cada persona (dispositivo) una sola vez en el total de participantes,
+permitiendo que la misma persona lance y escanee cuantas veces quiera.
 """
 
 import os
@@ -17,6 +21,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=BASE_DIR)
 
+dispositivos_unicos = set()
+
 estado = {
     "probabilidades": {
         "gracias": 75,
@@ -24,7 +30,8 @@ estado = {
         "premio": 7
     },
     "estadisticas": {
-        "total": 0,
+        "personas_unicas": 0,
+        "total_lanzamientos": 0,
         "gracias": 0,
         "promocional": 0,
         "premio": 0
@@ -109,8 +116,10 @@ def get_config():
 @app.route("/api/reset", methods=["POST"])
 def reset_estadisticas():
     """Resetea el conteo a 0 desde el admin y lo refleja en el monitor."""
+    dispositivos_unicos.clear()
     estado["estadisticas"] = {
-        "total": 0,
+        "personas_unicas": 0,
+        "total_lanzamientos": 0,
         "gracias": 0,
         "promocional": 0,
         "premio": 0
@@ -131,9 +140,16 @@ def registrar_tirada():
     data = request.json or {}
     resultado = data.get("resultado", "GRACIAS POR PARTICIPAR")
     folio = data.get("folio", "PR-0000")
+    device_id = data.get("device_id", "anonimo")
     timestamp = time.strftime("%H:%M:%S")
 
-    estado["estadisticas"]["total"] += 1
+    # Registro de dispositivo único (una persona = un conteo en personas)
+    es_persona_nueva = device_id not in dispositivos_unicos
+    dispositivos_unicos.add(device_id)
+
+    estado["estadisticas"]["personas_unicas"] = len(dispositivos_unicos)
+    estado["estadisticas"]["total_lanzamientos"] += 1
+
     if resultado == "PREMIO":
         estado["estadisticas"]["premio"] += 1
     elif resultado == "PROMOCIONAL":
@@ -145,6 +161,8 @@ def registrar_tirada():
         "tipo": "NUEVA_TIRADA",
         "resultado": resultado,
         "folio": folio,
+        "device_id": device_id,
+        "es_persona_nueva": es_persona_nueva,
         "timestamp": timestamp,
         "estadisticas": estado["estadisticas"]
     }
@@ -160,8 +178,10 @@ def registrar_tirada():
 
 @app.route("/api/iniciando_escaneo", methods=["POST"])
 def avisar_escaneo():
+    data = request.json or {}
     evento = {
         "tipo": "INICIANDO_SORTEO",
+        "device_id": data.get("device_id"),
         "timestamp": time.strftime("%H:%M:%S")
     }
     notificar_visores(evento)

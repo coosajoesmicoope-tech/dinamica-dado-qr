@@ -526,8 +526,9 @@
 
       <div class="stat-card">
         <div class="stat-info">
-          <h4>Total Participantes</h4>
+          <h4>Personas Únicas</h4>
           <div class="stat-value" id="tv-stat-total">0</div>
+          <small style="font-size: 0.65rem; color: #8fa5c7; display: block; margin-top: 2px;">Participantes reales</small>
         </div>
         <div class="stat-icon">👥</div>
       </div>
@@ -613,14 +614,21 @@
     // --- CANAL DE SINCRONIZACIÓN LOCAL (BROADCAST CHANNEL) ---
     // Funciona incluso sin servidor si abres index.html y visor.html en la misma computadora!
     const canalLocal = new BroadcastChannel('dinamica_sorteo_channel');
+    let dispositivosLocales = new Set();
+
     canalLocal.onmessage = (event) => {
       const data = event.data;
       if (data.tipo === 'INICIANDO_SORTEO') {
         ejecutarAnimacionVisor(data);
       } else if (data.tipo === 'NUEVA_TIRADA') {
+        if (data.device_id) {
+          dispositivosLocales.add(data.device_id);
+          document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
+        }
         revelarResultadoVisor(data);
       } else if (data.tipo === 'RESET_ESTADISTICAS') {
-        actualizarEstadisticas({ total: 0, premio: 0, promocional: 0 });
+        dispositivosLocales.clear();
+        actualizarEstadisticas({ personas_unicas: 0, premio: 0, promocional: 0 });
         document.getElementById('tv-history-list').innerHTML = `
           <li class="history-item gracias">
             <span>Conteo reseteado</span>
@@ -754,9 +762,13 @@
     }
 
     function actualizarEstadisticas(st) {
-      document.getElementById('tv-stat-total').textContent = st.total || 0;
-      document.getElementById('tv-stat-premio').textContent = st.premio || 0;
-      document.getElementById('tv-stat-promocional').textContent = st.promocional || 0;
+      if (st.personas_unicas !== undefined) {
+        document.getElementById('tv-stat-total').textContent = st.personas_unicas;
+      } else if (st.total !== undefined) {
+        document.getElementById('tv-stat-total').textContent = st.total;
+      }
+      if (st.premio !== undefined) document.getElementById('tv-stat-premio').textContent = st.premio;
+      if (st.promocional !== undefined) document.getElementById('tv-stat-promocional').textContent = st.promocional;
     }
 
     function agregarAlHistorial(resultado, hora) {

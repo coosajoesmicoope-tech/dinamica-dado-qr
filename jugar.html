@@ -836,7 +836,17 @@
   </div>
 
   <script>
-    // --- SINCRONIZACIÓN CON EL VISOR EN VIVO (TV) ---
+    // --- IDENTIFICADOR ÚNICO DE DISPOSITIVO (PERSONA ÚNICA) ---
+    function getDeviceId() {
+      let id = localStorage.getItem('coosajo_device_id');
+      if (!id) {
+        id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('coosajo_device_id', id);
+      }
+      return id;
+    }
+
+    // --- SINCRONIZACIÓN CON EL MONITOR EN VIVO (TV) ---
     const canalLocal = new BroadcastChannel('dinamica_sorteo_channel');
 
     canalLocal.onmessage = (event) => {
@@ -849,24 +859,31 @@
     };
 
     function notificarVisorInicio() {
-      canalLocal.postMessage({ tipo: 'INICIANDO_SORTEO' });
+      const device_id = getDeviceId();
+      canalLocal.postMessage({ tipo: 'INICIANDO_SORTEO', device_id: device_id });
       if (window.location.protocol.startsWith('http')) {
-        fetch('/api/iniciando_escaneo', { method: 'POST' }).catch(() => {});
+        fetch('/api/iniciando_escaneo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: device_id })
+        }).catch(() => {});
       }
     }
 
     function notificarVisorResultado(resultado, folio, timestamp) {
+      const device_id = getDeviceId();
       canalLocal.postMessage({
         tipo: 'NUEVA_TIRADA',
         resultado: resultado,
         folio: folio,
-        timestamp: timestamp
+        timestamp: timestamp,
+        device_id: device_id
       });
       if (window.location.protocol.startsWith('http')) {
         fetch('/api/tirada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resultado, folio })
+          body: JSON.stringify({ resultado, folio, device_id })
         }).catch(() => {});
       }
     }
@@ -885,25 +902,18 @@
     };
 
     let isSpinning = false;
-    let antiTrampaActivo = localStorage.getItem('anti_trampa') === 'true';
 
     // Cargar estadísticas al inicio
     document.getElementById('stat-gracias').textContent = stats.gracias;
     document.getElementById('stat-promocional').textContent = stats.promocional;
     document.getElementById('stat-premio').textContent = stats.premio;
-    document.getElementById('check-anti-trampa').checked = antiTrampaActivo;
 
-    // --- AUTO-INICIO INMEDIATO AL ESCANEAR EL QR ---
+    // --- AUTO-INICIO INMEDIATO EN CADA ESCANEO ---
     window.addEventListener('DOMContentLoaded', () => {
-      const previo = localStorage.getItem('resultado_previo');
-      if (antiTrampaActivo && previo) {
-        mostrarResultadoGuardado(JSON.parse(previo));
-      } else {
-        // Iniciar sorteo automáticamente tras un breve instante (500ms)
-        setTimeout(() => {
-          iniciarSorteo();
-        }, 500);
-      }
+      // Cada escaneo lanza el dado automáticamente tras 400ms
+      setTimeout(() => {
+        iniciarSorteo();
+      }, 400);
     });
 
     // --- SÍNTESIS DE SONIDO WEB AUDIO API (100% OFFLINE) ---
@@ -1087,7 +1097,7 @@
         stats.gracias++;
       }
 
-      // Guardar estadísticas
+      // Guardar estadísticas locales
       localStorage.setItem('stat_gracias', stats.gracias);
       localStorage.setItem('stat_promocional', stats.promocional);
       localStorage.setItem('stat_premio', stats.premio);
@@ -1095,23 +1105,14 @@
       document.getElementById('stat-promocional').textContent = stats.promocional;
       document.getElementById('stat-premio').textContent = stats.premio;
 
-      // Notificar al visor en vivo en pantalla de TV
+      // Notificar al monitor en vivo en pantalla de TV
       notificarVisorResultado(resultado, folio, timestamp);
 
-      // Si anti-trampa está activo, guardar
-      if (antiTrampaActivo) {
-        const datos = {
-          resultado: resultado,
-          folio: folio,
-          timestamp: timestamp
-        };
-        localStorage.setItem('resultado_previo', JSON.stringify(datos));
-        btn.textContent = 'PARTICIPACIÓN COMPLETADA';
-        btn.disabled = true;
-      } else {
-        btn.textContent = 'VOLVER A PARTICIPAR';
-        btn.disabled = false;
-      }
+      // Bloquear pantalla tras el tiro único: para volver a jugar deben volver a lanzar el dado físico
+      btn.textContent = '🎲 VUELVE A LANZAR EL DADO';
+      btn.disabled = true;
+      btn.style.opacity = '0.85';
+      resultMessage.innerHTML += '<br><span style="color: var(--coosajo-green-neon); font-size: 0.82rem; display: inline-block; margin-top: 10px; font-weight: 700;">📲 Para participar de nuevo, lanza el dado físico y escanea la cara que caiga.</span>';
 
       isSpinning = false;
     }

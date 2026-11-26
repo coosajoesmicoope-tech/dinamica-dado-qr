@@ -132,13 +132,9 @@
     /* TARJETAS DE MÉTRICAS */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
-    }
-
-    @media (max-width: 768px) {
-      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
     .metric-card {
@@ -312,20 +308,26 @@
 
     <!-- TARJETAS DE MÉTRICAS EN VIVO -->
     <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-label">Total Tiradas</div>
-        <div class="metric-value" id="val-total" style="color: #ffffff;">0</div>
+      <div class="metric-card" style="border-color: var(--green-neon);">
+        <div class="metric-label" style="color: var(--green-neon);">👥 Personas Únicas</div>
+        <div class="metric-value" id="val-personas" style="color: var(--green-neon);">0</div>
+        <small style="font-size: 0.65rem; color: #8fa5c7; display: block; margin-top: 4px;">Dispositivos registrados</small>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Premios Mayores</div>
+        <div class="metric-label">🎲 Total Tiradas</div>
+        <div class="metric-value" id="val-total" style="color: #ffffff;">0</div>
+        <small style="font-size: 0.65rem; color: #8fa5c7; display: block; margin-top: 4px;">Escaneos acumulados</small>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">🏆 Premios Mayores</div>
         <div class="metric-value" id="val-premio" style="color: var(--gold);">0</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Promocionales</div>
-        <div class="metric-value" id="val-promocional" style="color: var(--green-neon);">0</div>
+        <div class="metric-label">🎁 Promocionales</div>
+        <div class="metric-value" id="val-promocional" style="color: var(--cyan);">0</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Gracias p/ Participar</div>
+        <div class="metric-label">💙 Gracias p/ Participar</div>
         <div class="metric-value" id="val-gracias" style="color: #bed2f0;">0</div>
       </div>
     </div>
@@ -404,8 +406,11 @@
   <script>
     const canal = new BroadcastChannel('dinamica_sorteo_channel');
 
+    let dispositivosAdmin = new Set(JSON.parse(localStorage.getItem('admin_dispositivos') || '[]'));
+
     let stats = {
-      total: parseInt(localStorage.getItem('stat_total') || '0'),
+      personas_unicas: dispositivosAdmin.size,
+      total_lanzamientos: parseInt(localStorage.getItem('stat_total_lanzamientos') || '0'),
       premio: parseInt(localStorage.getItem('stat_premio') || '0'),
       promocional: parseInt(localStorage.getItem('stat_promocional') || '0'),
       gracias: parseInt(localStorage.getItem('stat_gracias') || '0')
@@ -420,7 +425,8 @@
     let historial = JSON.parse(localStorage.getItem('admin_historial') || '[]');
 
     function renderizarEstadisticas() {
-      document.getElementById('val-total').textContent = stats.total;
+      document.getElementById('val-personas').textContent = stats.personas_unicas;
+      document.getElementById('val-total').textContent = stats.total_lanzamientos;
       document.getElementById('val-premio').textContent = stats.premio;
       document.getElementById('val-promocional').textContent = stats.promocional;
       document.getElementById('val-gracias').textContent = stats.gracias;
@@ -436,14 +442,16 @@
         return;
       }
 
-      tbody.innerHTML = historial.slice(0, 15).map(item => {
+      tbody.innerHTML = historial.slice(0, 20).map(item => {
         let badgeClass = 'badge-gracias';
         if (item.resultado === 'PREMIO') badgeClass = 'badge-premio';
         else if (item.resultado === 'PROMOCIONAL') badgeClass = 'badge-promocional';
 
+        const avisoNuevo = item.es_nuevo ? '<span style="color:#00e626; font-size:0.68rem; margin-left:4px;">(Nueva Persona)</span>' : '';
+
         return `
           <tr>
-            <td style="color: #fff; font-family: monospace; font-size: 0.95rem;">#${item.folio}</td>
+            <td style="color: #fff; font-family: monospace; font-size: 0.95rem;">#${item.folio} ${avisoNuevo}</td>
             <td><span class="badge-result ${badgeClass}">${item.resultado}</span></td>
             <td style="color: #8fa5c7;">${item.timestamp}</td>
           </tr>
@@ -455,7 +463,16 @@
     canal.onmessage = (event) => {
       const data = event.data;
       if (data.tipo === 'NUEVA_TIRADA') {
-        stats.total++;
+        stats.total_lanzamientos++;
+        let esNuevo = false;
+        if (data.device_id) {
+          if (!dispositivosAdmin.has(data.device_id)) {
+            dispositivosAdmin.add(data.device_id);
+            esNuevo = true;
+          }
+        }
+        stats.personas_unicas = dispositivosAdmin.size;
+
         if (data.resultado === 'PREMIO') stats.premio++;
         else if (data.resultado === 'PROMOCIONAL') stats.promocional++;
         else stats.gracias++;
@@ -463,12 +480,14 @@
         historial.unshift({
           folio: data.folio,
           resultado: data.resultado,
+          es_nuevo: esNuevo,
           timestamp: data.timestamp || new Date().toLocaleTimeString()
         });
 
         if (historial.length > 50) historial.pop();
 
-        localStorage.setItem('stat_total', stats.total);
+        localStorage.setItem('admin_dispositivos', JSON.stringify([...dispositivosAdmin]));
+        localStorage.setItem('stat_total_lanzamientos', stats.total_lanzamientos);
         localStorage.setItem('stat_premio', stats.premio);
         localStorage.setItem('stat_promocional', stats.promocional);
         localStorage.setItem('stat_gracias', stats.gracias);
@@ -484,7 +503,8 @@
         .then(r => r.json())
         .then(cfg => {
           if (cfg.estadisticas) {
-            stats.total = cfg.estadisticas.total || 0;
+            stats.personas_unicas = cfg.estadisticas.personas_unicas || 0;
+            stats.total_lanzamientos = cfg.estadisticas.total_lanzamientos || 0;
             stats.premio = cfg.estadisticas.premio || 0;
             stats.promocional = cfg.estadisticas.promocional || 0;
             stats.gracias = cfg.estadisticas.gracias || 0;
@@ -496,17 +516,19 @@
     // --- RESETEAR CONTEO A CERO ---
     function confirmarReset() {
       if (confirm('⚠️ ¿Estás seguro de que deseas reiniciar todos los contadores a CERO?\n\nEsta acción borrará el conteo en este panel y en la pantalla de TV.')) {
-        stats = { total: 0, premio: 0, promocional: 0, gracias: 0 };
+        dispositivosAdmin.clear();
+        stats = { personas_unicas: 0, total_lanzamientos: 0, premio: 0, promocional: 0, gracias: 0 };
         historial = [];
 
-        localStorage.setItem('stat_total', '0');
+        localStorage.setItem('admin_dispositivos', '[]');
+        localStorage.setItem('stat_total_lanzamientos', '0');
         localStorage.setItem('stat_premio', '0');
         localStorage.setItem('stat_promocional', '0');
         localStorage.setItem('stat_gracias', '0');
         localStorage.setItem('admin_historial', '[]');
         localStorage.removeItem('resultado_previo');
 
-        // Notificar al monitor (index.html) en tiempo real
+        // Notificar al monitor (index.html) y celulares en tiempo real
         canal.postMessage({ tipo: 'RESET_ESTADISTICAS' });
 
         if (window.location.protocol.startsWith('http')) {
