@@ -638,8 +638,48 @@
       }
     };
 
-    // --- CONEXIÓN CON EL SERVIDOR EN VIVO (SSE / SERVER-SENT EVENTS) ---
+    // --- CONEXIÓN EN TIEMPO REAL NUBE (CELULAR LTE -> PANTALLA TV) ---
+    const CLOUD_STREAM_URL = 'https://ntfy.sh/coosajo_dado_live_sync_2026/sse';
+
+    function conectarSincronizacionNube() {
+      const cloudSource = new EventSource(CLOUD_STREAM_URL);
+
+      cloudSource.onmessage = (e) => {
+        try {
+          const raw = JSON.parse(e.data);
+          if (raw.event === 'message' && raw.message) {
+            const data = JSON.parse(raw.message);
+            if (data.tipo === 'INICIANDO_SORTEO') {
+              ejecutarAnimacionVisor(data);
+            } else if (data.tipo === 'NUEVA_TIRADA') {
+              if (data.device_id) {
+                dispositivosLocales.add(data.device_id);
+                document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
+              }
+              revelarResultadoVisor(data);
+            } else if (data.tipo === 'RESET_ESTADISTICAS') {
+              dispositivosLocales.clear();
+              actualizarEstadisticas({ personas_unicas: 0, premio: 0, promocional: 0 });
+              document.getElementById('tv-history-list').innerHTML = `
+                <li class="history-item gracias">
+                  <span>Conteo reseteado</span>
+                  <span>--:--</span>
+                </li>
+              `;
+            }
+          }
+        } catch (err) {}
+      };
+
+      cloudSource.onerror = () => {
+        setTimeout(conectarSincronizacionNube, 3000);
+      };
+    }
+    conectarSincronizacionNube();
+
+    // --- CONEXIÓN CON EL SERVIDOR EN VIVO LOCAL SI EXISTE ---
     function conectarServidorSSE() {
+      if (window.location.host.includes('github.io')) return;
       const evtSource = new EventSource('/api/stream');
       
       evtSource.onmessage = (e) => {

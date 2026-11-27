@@ -405,6 +405,7 @@
 
   <script>
     const canal = new BroadcastChannel('dinamica_sorteo_channel');
+    const CLOUD_SYNC_URL = 'https://ntfy.sh/coosajo_dado_live_sync_2026';
 
     let dispositivosAdmin = new Set(JSON.parse(localStorage.getItem('admin_dispositivos') || '[]'));
 
@@ -424,76 +425,61 @@
 
     let historial = JSON.parse(localStorage.getItem('admin_historial') || '[]');
 
-    function renderizarEstadisticas() {
-      document.getElementById('val-personas').textContent = stats.personas_unicas;
-      document.getElementById('val-total').textContent = stats.total_lanzamientos;
-      document.getElementById('val-premio').textContent = stats.premio;
-      document.getElementById('val-promocional').textContent = stats.promocional;
-      document.getElementById('val-gracias').textContent = stats.gracias;
-      renderizarHistorial();
-    }
-
-    function renderizarHistorial() {
-      const tbody = document.getElementById('history-tbody');
-      document.getElementById('lbl-historial-count').textContent = `${historial.length} registros`;
-
-      if (historial.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #7a8fae; padding: 20px;">No hay lanzamientos registrados aún.</td></tr>`;
-        return;
+    function procesarNuevaTirada(data) {
+      stats.total_lanzamientos++;
+      let esNuevo = false;
+      if (data.device_id) {
+        if (!dispositivosAdmin.has(data.device_id)) {
+          dispositivosAdmin.add(data.device_id);
+          esNuevo = true;
+        }
       }
+      stats.personas_unicas = dispositivosAdmin.size;
 
-      tbody.innerHTML = historial.slice(0, 20).map(item => {
-        let badgeClass = 'badge-gracias';
-        if (item.resultado === 'PREMIO') badgeClass = 'badge-premio';
-        else if (item.resultado === 'PROMOCIONAL') badgeClass = 'badge-promocional';
+      if (data.resultado === 'PREMIO') stats.premio++;
+      else if (data.resultado === 'PROMOCIONAL') stats.promocional++;
+      else stats.gracias++;
 
-        const avisoNuevo = item.es_nuevo ? '<span style="color:#00e626; font-size:0.68rem; margin-left:4px;">(Nueva Persona)</span>' : '';
+      historial.unshift({
+        folio: data.folio,
+        resultado: data.resultado,
+        es_nuevo: esNuevo,
+        timestamp: data.timestamp || new Date().toLocaleTimeString()
+      });
 
-        return `
-          <tr>
-            <td style="color: #fff; font-family: monospace; font-size: 0.95rem;">#${item.folio} ${avisoNuevo}</td>
-            <td><span class="badge-result ${badgeClass}">${item.resultado}</span></td>
-            <td style="color: #8fa5c7;">${item.timestamp}</td>
-          </tr>
-        `;
-      }).join('');
+      if (historial.length > 50) historial.pop();
+
+      localStorage.setItem('admin_dispositivos', JSON.stringify([...dispositivosAdmin]));
+      localStorage.setItem('stat_total_lanzamientos', stats.total_lanzamientos);
+      localStorage.setItem('stat_premio', stats.premio);
+      localStorage.setItem('stat_promocional', stats.promocional);
+      localStorage.setItem('stat_gracias', stats.gracias);
+      localStorage.setItem('admin_historial', JSON.stringify(historial));
+
+      renderizarEstadisticas();
     }
 
-    // Escuchar tiradas en tiempo real desde los celulares
+    // 1. Escuchar eventos en la nube en tiempo real (LTE / Internet)
+    const cloudSource = new EventSource(CLOUD_SYNC_URL + '/sse');
+    cloudSource.onmessage = (e) => {
+      try {
+        const raw = JSON.parse(e.data);
+        if (raw.event === 'message' && raw.message) {
+          const data = JSON.parse(raw.message);
+          if (data.tipo === 'NUEVA_TIRADA') {
+            procesarNuevaTirada(data);
+          } else if (data.tipo === 'RESET_ESTADISTICAS') {
+            ejecutarResetLocal();
+          }
+        }
+      } catch (err) {}
+    };
+
+    // 2. Escuchar canal local
     canal.onmessage = (event) => {
       const data = event.data;
       if (data.tipo === 'NUEVA_TIRADA') {
-        stats.total_lanzamientos++;
-        let esNuevo = false;
-        if (data.device_id) {
-          if (!dispositivosAdmin.has(data.device_id)) {
-            dispositivosAdmin.add(data.device_id);
-            esNuevo = true;
-          }
-        }
-        stats.personas_unicas = dispositivosAdmin.size;
-
-        if (data.resultado === 'PREMIO') stats.premio++;
-        else if (data.resultado === 'PROMOCIONAL') stats.promocional++;
-        else stats.gracias++;
-
-        historial.unshift({
-          folio: data.folio,
-          resultado: data.resultado,
-          es_nuevo: esNuevo,
-          timestamp: data.timestamp || new Date().toLocaleTimeString()
-        });
-
-        if (historial.length > 50) historial.pop();
-
-        localStorage.setItem('admin_dispositivos', JSON.stringify([...dispositivosAdmin]));
-        localStorage.setItem('stat_total_lanzamientos', stats.total_lanzamientos);
-        localStorage.setItem('stat_premio', stats.premio);
-        localStorage.setItem('stat_promocional', stats.promocional);
-        localStorage.setItem('stat_gracias', stats.gracias);
-        localStorage.setItem('admin_historial', JSON.stringify(historial));
-
-        renderizarEstadisticas();
+        procesarNuevaTirada(data);
       }
     };
 
@@ -513,29 +499,41 @@
         }).catch(() => {});
     }
 
+    function ejecutarResetLocal() {
+      dispositivosAdmin.clear();
+      stats = { personas_unicas: 0, total_lanzamientos: 0, premio: 0, promocional: 0, gracias: 0 };
+      historial = [];
+
+      localStorage.setItem('admin_dispositivos', '[]');
+      localStorage.setItem('stat_total_lanzamientos', '0');
+      localStorage.setItem('stat_premio', '0');
+      localStorage.setItem('stat_promocional', '0');
+      localStorage.setItem('stat_gracias', '0');
+      localStorage.setItem('admin_historial', '[]');
+      localStorage.removeItem('resultado_previo');
+
+      renderizarEstadisticas();
+    }
+
     // --- RESETEAR CONTEO A CERO ---
     function confirmarReset() {
       if (confirm('⚠️ ¿Estás seguro de que deseas reiniciar todos los contadores a CERO?\n\nEsta acción borrará el conteo en este panel y en la pantalla de TV.')) {
-        dispositivosAdmin.clear();
-        stats = { personas_unicas: 0, total_lanzamientos: 0, premio: 0, promocional: 0, gracias: 0 };
-        historial = [];
+        ejecutarResetLocal();
 
-        localStorage.setItem('admin_dispositivos', '[]');
-        localStorage.setItem('stat_total_lanzamientos', '0');
-        localStorage.setItem('stat_premio', '0');
-        localStorage.setItem('stat_promocional', '0');
-        localStorage.setItem('stat_gracias', '0');
-        localStorage.setItem('admin_historial', '[]');
-        localStorage.removeItem('resultado_previo');
-
-        // Notificar al monitor (index.html) y celulares en tiempo real
+        // 1. Notificar canal local
         canal.postMessage({ tipo: 'RESET_ESTADISTICAS' });
 
-        if (window.location.protocol.startsWith('http')) {
+        // 2. Notificar en la nube a la pantalla TV (vía internet / LTE)
+        fetch(CLOUD_SYNC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo: 'RESET_ESTADISTICAS' })
+        }).catch(() => {});
+
+        if (window.location.protocol.startsWith('http') && !window.location.host.includes('github.io')) {
           fetch('/api/reset', { method: 'POST' }).catch(() => {});
         }
 
-        renderizarEstadisticas();
         mostrarToast('✅ ¡Conteo reseteado exitosamente a 0!');
       }
     }

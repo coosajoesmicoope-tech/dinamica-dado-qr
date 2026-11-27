@@ -665,175 +665,13 @@
         </div>
       </div>
 
-      <!-- Botón de Acción -->
-      <button class="btn-action" id="btn-spin" onclick="iniciarSorteo()">
-        ¡TOCAR PARA JUGAR!
+      <!-- Botón de Estado / Indicación -->
+      <button class="btn-action" id="btn-spin" style="cursor: default;" disabled>
+        ¡DADO RODANDO...!
       </button>
 
     </div>
   </main>
-
-  <!-- Pie de página / Accesos rápidos -->
-  <footer>
-    <button class="btn-subtle" onclick="abrirModal('modal-qrs')">
-      <span>📱</span> Descargar Códigos QR
-    </button>
-    <button class="btn-subtle" onclick="abrirModal('modal-config')">
-      <span>⚙️</span> Probabilidades & Ajustes
-    </button>
-  </footer>
-
-  <!-- MODAL: Ajustes de Probabilidades -->
-  <div class="modal-overlay" id="modal-config">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">⚙️ Ajustes del Sorteo</div>
-        <button class="modal-close" onclick="cerrarModal('modal-config')">&times;</button>
-      </div>
-
-      <p style="font-size: 0.85rem; color: #a0b8df; margin-bottom: 20px;">
-        Configura los porcentajes de aparición de cada resultado. La suma debe ser 100%.
-      </p>
-
-      <div class="form-group">
-        <label>
-          <span>1. Gracias por Participar (Mayoría)</span>
-          <span class="val" id="val-gracias">75%</span>
-        </label>
-        <input type="range" id="range-gracias" min="10" max="95" value="75" oninput="actualizarProbabilidades('gracias')">
-      </div>
-
-      <div class="form-group">
-        <label>
-          <span>2. Promocional (Artículos/Souvenirs)</span>
-          <span class="val" id="val-promocional">18%</span>
-        </label>
-        <input type="range" id="range-promocional" min="1" max="50" value="18" oninput="actualizarProbabilidades('promocional')">
-      </div>
-
-      <div class="form-group">
-        <label>
-          <span>3. Premio (Premio Mayor)</span>
-          <span class="val" id="val-premio">7%</span>
-        </label>
-        <input type="range" id="range-premio" min="1" max="40" value="7" oninput="actualizarProbabilidades('premio')">
-      </div>
-
-      <!-- Estadísticas de la sesión -->
-      <div class="modal-title" style="font-size: 1rem; margin-top: 24px;">📊 Registro de Tiradas</div>
-      <div class="stats-grid">
-        <div class="stat-box">
-          <div class="stat-num" id="stat-gracias">0</div>
-          <div class="stat-label">Gracias</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-num" id="stat-promocional" style="color: var(--coosajo-cyan);">0</div>
-          <div class="stat-label">Promocional</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-num" id="stat-premio" style="color: var(--coosajo-gold);">0</div>
-          <div class="stat-label">Premios</div>
-        </div>
-      </div>
-
-      <div class="toggle-row">
-        <div>
-          <div style="font-weight: 700; font-size: 0.9rem;">Limitar a 1 intento por persona</div>
-          <div style="font-size: 0.75rem; color: #8fa5c7;">Evita que recarguen la página para ganar</div>
-        </div>
-        <input type="checkbox" id="check-anti-trampa" style="width: 20px; height: 20px; accent-color: var(--coosajo-green-neon);" onchange="toggleAntiTrampa()">
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn-action" style="padding: 12px; font-size: 0.9rem;" onclick="reiniciarPartida()">
-          🔄 Probar de Nuevo
-        </button>
-        <button class="btn-subtle" style="width: 100%; justify-content: center;" onclick="resetEstadisticas()">
-          Borrar Contadores
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- MODAL: Códigos QR Transparentes -->
-  <div class="modal-overlay" id="modal-qrs">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">📱 Códigos QR Transparentes</div>
-        <button class="modal-close" onclick="cerrarModal('modal-qrs')">&times;</button>
-      </div>
-
-      <p style="font-size: 0.85rem; color: #a0b8df; margin-bottom: 12px;">
-        Cada código cuenta con <strong>fondo 100% transparente</strong> y la estética de ondas y estrellas.
-      </p>
-
-      <div class="qr-card" style="margin-bottom: 16px; border: 2px solid var(--coosajo-gold);">
-        <div class="qr-title" style="color: var(--coosajo-gold); font-size: 0.9rem;">
-          🎲 HOJA IMPRIMIBLE PARA LAS 6 CARAS DEL DADO
-        </div>
-        <p style="font-size: 0.75rem; color: #bed2f0; margin-bottom: 8px;">
-          Plantilla lista para imprimir en tamaño carta/A4, recortar los 6 cuadrados y pegarlos en las 6 caras de tu dado físico: 4 caras de Gracias, 1 Promocional y 1 Premio.
-        </p>
-        <a href="codigos_qr_generados/plantilla_imprimible_dado_6_caras.png" download="Plantilla_Dado_6_Caras.png" class="btn-download" style="background: linear-gradient(135deg, #00d020, #008810); color: #fff; font-size: 0.82rem; padding: 10px;">
-          🖨️ Descargar Plantilla Imprimible del Dado (Alta Resolución)
-        </a>
-      </div>
-
-      <div class="qr-card" style="margin-bottom: 16px; border: 2px solid var(--coosajo-green-neon);">
-        <div class="qr-title" style="color: var(--coosajo-green-neon); font-size: 0.9rem;">
-          ⭐ QR MAESTRO (Acceso a esta Dinámica)
-        </div>
-        <p style="font-size: 0.75rem; color: #bed2f0; margin-bottom: 8px;">
-          Este es el QR que imprimes en stands, afiches o pantallas para que las personas escaneen y entren a jugar.
-        </p>
-        <div class="qr-preview-box" style="height: 160px;">
-          <img src="codigos_qr_generados/qr_maestro_dinamica.png" alt="QR Maestro">
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <a href="codigos_qr_generados/qr_maestro_dinamica.png" download="QR_Maestro_Dinamica.png" class="btn-download">Descargar PNG</a>
-          <a href="codigos_qr_generados/qr_maestro_dinamica_blanco.png" download="QR_Maestro_Dinamica_Blanco.png" class="btn-download" style="background: #022060;">Versión Blanca</a>
-          <a href="codigos_qr_generados/qr_maestro_dinamica.svg" download="QR_Maestro_Dinamica.svg" class="btn-download" style="background: #007520;">SVG Vector</a>
-        </div>
-      </div>
-
-      <div class="modal-title" style="font-size: 0.95rem; margin-top: 14px;">QRs Individuales por Texto:</div>
-      <div class="qr-gallery">
-
-        <!-- QR 1: PREMIO -->
-        <div class="qr-card">
-          <div class="qr-title" style="color: var(--coosajo-gold);">1. PREMIO</div>
-          <div class="qr-preview-box">
-            <img src="codigos_qr_generados/qr_1_premio.png" alt="QR Premio">
-          </div>
-          <a href="codigos_qr_generados/qr_1_premio.png" download="QR_1_PREMIO.png" class="btn-download">PNG Color</a>
-          <a href="codigos_qr_generados/qr_1_premio_blanco.png" download="QR_1_PREMIO_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
-        </div>
-
-        <!-- QR 2: GRACIAS POR PARTICIPAR -->
-        <div class="qr-card">
-          <div class="qr-title">2. GRACIAS</div>
-          <div class="qr-preview-box">
-            <img src="codigos_qr_generados/qr_2_gracias_por_participar.png" alt="QR Gracias">
-          </div>
-          <a href="codigos_qr_generados/qr_2_gracias_por_participar.png" download="QR_2_GRACIAS.png" class="btn-download">PNG Color</a>
-          <a href="codigos_qr_generados/qr_2_gracias_por_participar_blanco.png" download="QR_2_GRACIAS_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
-        </div>
-
-        <!-- QR 3: PROMOCIONAL -->
-        <div class="qr-card">
-          <div class="qr-title" style="color: var(--coosajo-green-neon);">3. PROMOCIONAL</div>
-          <div class="qr-preview-box">
-            <img src="codigos_qr_generados/qr_3_promocional.png" alt="QR Promocional">
-          </div>
-          <a href="codigos_qr_generados/qr_3_promocional.png" download="QR_3_PROMOCIONAL.png" class="btn-download">PNG Color</a>
-          <a href="codigos_qr_generados/qr_3_promocional_blanco.png" download="QR_3_PROMOCIONAL_Blanco.png" class="btn-download" style="background:#022060;">PNG Blanco</a>
-        </div>
-
-      </div>
-
-    </div>
-  </div>
 
   <script>
     // --- IDENTIFICADOR ÚNICO DE DISPOSITIVO (PERSONA ÚNICA) ---
@@ -846,8 +684,9 @@
       return id;
     }
 
-    // --- SINCRONIZACIÓN CON EL MONITOR EN VIVO (TV) ---
+    // --- SINCRONIZACIÓN EN TIEMPO REAL (CELULAR -> PANTALLA TV) ---
     const canalLocal = new BroadcastChannel('dinamica_sorteo_channel');
+    const CLOUD_SYNC_URL = 'https://ntfy.sh/coosajo_dado_live_sync_2026';
 
     canalLocal.onmessage = (event) => {
       const data = event.data;
@@ -860,8 +699,18 @@
 
     function notificarVisorInicio() {
       const device_id = getDeviceId();
-      canalLocal.postMessage({ tipo: 'INICIANDO_SORTEO', device_id: device_id });
-      if (window.location.protocol.startsWith('http')) {
+      const payload = { tipo: 'INICIANDO_SORTEO', device_id: device_id };
+      
+      canalLocal.postMessage(payload);
+
+      // Enviar a la nube (funciona desde celular con datos LTE o Wi-Fi)
+      fetch(CLOUD_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+
+      if (window.location.protocol.startsWith('http') && !window.location.host.includes('github.io')) {
         fetch('/api/iniciando_escaneo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -872,18 +721,28 @@
 
     function notificarVisorResultado(resultado, folio, timestamp) {
       const device_id = getDeviceId();
-      canalLocal.postMessage({
+      const payload = {
         tipo: 'NUEVA_TIRADA',
         resultado: resultado,
         folio: folio,
         timestamp: timestamp,
         device_id: device_id
-      });
-      if (window.location.protocol.startsWith('http')) {
+      };
+
+      canalLocal.postMessage(payload);
+
+      // Enviar a la nube en tiempo real (menos de 100ms a la pantalla TV)
+      fetch(CLOUD_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+
+      if (window.location.protocol.startsWith('http') && !window.location.host.includes('github.io')) {
         fetch('/api/tirada', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resultado, folio, device_id })
+          body: JSON.stringify(payload)
         }).catch(() => {});
       }
     }
