@@ -674,45 +674,77 @@
     document.getElementById('tv-stat-premio').textContent = tvStats.premio;
     document.getElementById('tv-stat-promocional').textContent = tvStats.promocional;
 
-    // --- RECEPTOR LOCAL (BROADCAST CHANNEL) ---
-    canalLocal.onmessage = (event) => {
-      const data = event.data;
+    // --- RESPUESTA Y LATIDO (HEARTBEAT) HACIA EL ADMIN ---
+    function enviarSenalVisor(tipoEvento = 'VISOR_HEARTBEAT') {
+      const payload = {
+        tipo: tipoEvento,
+        personas_unicas: dispositivosLocales.size,
+        premio: tvStats.premio,
+        promocional: tvStats.promocional,
+        timestamp: Date.now()
+      };
+      
+      // 1. Canal local
+      canalLocal.postMessage(payload);
+
+      // 2. Nube
+      fetch(CLOUD_STREAM_URL.replace('/sse', ''), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    }
+
+    function procesarMensajeVisor(data) {
+      if (!data || !data.tipo) return;
+
       if (data.tipo === 'INICIANDO_SORTEO') {
         ejecutarAnimacionVisor(data);
       } else if (data.tipo === 'NUEVA_TIRADA') {
         revelarResultadoVisor(data);
+      } else if (data.tipo === 'ADMIN_PING') {
+        enviarSenalVisor('VISOR_PONG');
       } else if (data.tipo === 'RESET_ESTADISTICAS') {
         ejecutarResetVisor();
+        enviarSenalVisor('RESET_CONFIRMADO');
       }
+    }
+
+    // --- RECEPTOR LOCAL (BROADCAST CHANNEL) ---
+    canalLocal.onmessage = (event) => {
+      procesarMensajeVisor(event.data);
     };
 
     // --- CONEXIÓN EN TIEMPO REAL NUBE (CELULAR LTE -> PANTALLA TV) ---
     const CLOUD_STREAM_URL = 'https://ntfy.sh/coosajo_dado_live_sync_2026/sse';
+    let cloudSourceVisor = null;
 
     function conectarSincronizacionNube() {
-      const cloudSource = new EventSource(CLOUD_STREAM_URL);
+      if (cloudSourceVisor) {
+        try { cloudSourceVisor.close(); } catch (e) {}
+      }
+      cloudSourceVisor = new EventSource(CLOUD_STREAM_URL);
 
-      cloudSource.onmessage = (e) => {
+      cloudSourceVisor.onmessage = (e) => {
         try {
           const raw = JSON.parse(e.data);
           if (raw.event === 'message' && raw.message) {
             const data = JSON.parse(raw.message);
-            if (data.tipo === 'INICIANDO_SORTEO') {
-              ejecutarAnimacionVisor(data);
-            } else if (data.tipo === 'NUEVA_TIRADA') {
-              revelarResultadoVisor(data);
-            } else if (data.tipo === 'RESET_ESTADISTICAS') {
-              ejecutarResetVisor();
-            }
+            procesarMensajeVisor(data);
           }
         } catch (err) {}
       };
 
-      cloudSource.onerror = () => {
+      cloudSourceVisor.onerror = () => {
         setTimeout(conectarSincronizacionNube, 3000);
       };
     }
     conectarSincronizacionNube();
+
+    // Emitir latido de presencia cada 5 segundos para que el admin confirme que está conectado
+    setInterval(() => {
+      enviarSenalVisor('VISOR_HEARTBEAT');
+    }, 5000);
 
     function ejecutarResetVisor() {
       dispositivosLocales.clear();
