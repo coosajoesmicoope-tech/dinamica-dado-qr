@@ -723,8 +723,10 @@
 
     function notificarVisorResultado(resultado, folio, timestamp) {
       const device_id = getDeviceId();
+      const tirada_id = 't_' + device_id + '_' + Date.now() + '_' + folio;
       const payload = {
         tipo: 'NUEVA_TIRADA',
+        tirada_id: tirada_id,
         resultado: resultado,
         folio: folio,
         timestamp: timestamp,

@@ -424,8 +424,22 @@
     };
 
     let historial = JSON.parse(localStorage.getItem('admin_historial') || '[]');
+    const tiradasProcesadasAdmin = new Set();
 
     function procesarNuevaTirada(data) {
+      if (!data || !data.resultado) return;
+
+      // Evitar duplicados si llega por canal local y nube simultáneamente
+      const tiradaKey = data.tirada_id || (data.device_id + '_' + data.folio);
+      if (tiradasProcesadasAdmin.has(tiradaKey)) {
+        return;
+      }
+      tiradasProcesadasAdmin.add(tiradaKey);
+      if (tiradasProcesadasAdmin.size > 200) {
+        const first = tiradasProcesadasAdmin.values().next().value;
+        tiradasProcesadasAdmin.delete(first);
+      }
+
       stats.total_lanzamientos++;
       let esNuevo = false;
       if (data.device_id) {
@@ -501,6 +515,7 @@
 
     function ejecutarResetLocal() {
       dispositivosAdmin.clear();
+      tiradasProcesadasAdmin.clear();
       stats = { personas_unicas: 0, total_lanzamientos: 0, premio: 0, promocional: 0, gracias: 0 };
       historial = [];
 

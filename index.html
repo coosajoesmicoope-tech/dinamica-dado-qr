@@ -414,9 +414,54 @@
       font-weight: 700;
       color: rgba(255, 255, 255, 0.85);
     }
+
+    /* BANNER DE AVISO PARA MÓVILES (Si abren el visor en el celular) */
+    .mobile-notice-banner {
+      display: none;
+      background: linear-gradient(90deg, #011434, #002878);
+      border-bottom: 2px solid var(--green-neon);
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 0.92rem;
+      color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .mobile-notice-banner .btn-ir-jugar {
+      display: inline-block;
+      padding: 7px 16px;
+      background: var(--green-neon);
+      color: #011434;
+      font-weight: 800;
+      border-radius: 20px;
+      text-decoration: none;
+      box-shadow: 0 0 12px rgba(0, 230, 38, 0.5);
+      transition: transform 0.2s;
+    }
+    .mobile-notice-banner .btn-ir-jugar:active {
+      transform: scale(0.96);
+    }
+
+    @media (max-width: 900px) {
+      .mobile-notice-banner {
+        display: flex;
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
+
+  <!-- Banner de aviso si alguien abre el monitor desde un celular -->
+  <div id="mobile-notice-banner" class="mobile-notice-banner">
+    <span>📺 Estás viendo la <strong>PANTALLA MONITOR DE TV</strong></span>
+    <a href="jugar.html" class="btn-ir-jugar">🎲 Toca aquí para JUGAR EN TU CELULAR</a>
+  </div>
 
   <div class="bg-darken"></div>
   <canvas id="tv-confetti"></canvas>
@@ -613,30 +658,31 @@
       } catch (e) {}
     }
 
-    // --- CANAL DE SINCRONIZACIÓN LOCAL (BROADCAST CHANNEL) ---
-    // Funciona incluso sin servidor si abres index.html y visor.html en la misma computadora!
+    // --- ESTADO Y DEDUPLICACIÓN DE EVENTOS ---
+    const tiradasProcesadas = new Set();
     const canalLocal = new BroadcastChannel('dinamica_sorteo_channel');
-    let dispositivosLocales = new Set();
+    
+    let tvStats = {
+      personas_unicas: parseInt(localStorage.getItem('tv_personas_unicas') || '0'),
+      premio: parseInt(localStorage.getItem('tv_premio') || '0'),
+      promocional: parseInt(localStorage.getItem('tv_promocional') || '0')
+    };
+    let dispositivosLocales = new Set(JSON.parse(localStorage.getItem('tv_dispositivos') || '[]'));
 
+    // Restaurar contadores al cargar pantalla
+    document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
+    document.getElementById('tv-stat-premio').textContent = tvStats.premio;
+    document.getElementById('tv-stat-promocional').textContent = tvStats.promocional;
+
+    // --- RECEPTOR LOCAL (BROADCAST CHANNEL) ---
     canalLocal.onmessage = (event) => {
       const data = event.data;
       if (data.tipo === 'INICIANDO_SORTEO') {
         ejecutarAnimacionVisor(data);
       } else if (data.tipo === 'NUEVA_TIRADA') {
-        if (data.device_id) {
-          dispositivosLocales.add(data.device_id);
-          document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
-        }
         revelarResultadoVisor(data);
       } else if (data.tipo === 'RESET_ESTADISTICAS') {
-        dispositivosLocales.clear();
-        actualizarEstadisticas({ personas_unicas: 0, premio: 0, promocional: 0 });
-        document.getElementById('tv-history-list').innerHTML = `
-          <li class="history-item gracias">
-            <span>Conteo reseteado</span>
-            <span>--:--</span>
-          </li>
-        `;
+        ejecutarResetVisor();
       }
     };
 
@@ -654,20 +700,9 @@
             if (data.tipo === 'INICIANDO_SORTEO') {
               ejecutarAnimacionVisor(data);
             } else if (data.tipo === 'NUEVA_TIRADA') {
-              if (data.device_id) {
-                dispositivosLocales.add(data.device_id);
-                document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
-              }
               revelarResultadoVisor(data);
             } else if (data.tipo === 'RESET_ESTADISTICAS') {
-              dispositivosLocales.clear();
-              actualizarEstadisticas({ personas_unicas: 0, premio: 0, promocional: 0 });
-              document.getElementById('tv-history-list').innerHTML = `
-                <li class="history-item gracias">
-                  <span>Conteo reseteado</span>
-                  <span>--:--</span>
-                </li>
-              `;
+              ejecutarResetVisor();
             }
           }
         } catch (err) {}
@@ -678,6 +713,23 @@
       };
     }
     conectarSincronizacionNube();
+
+    function ejecutarResetVisor() {
+      dispositivosLocales.clear();
+      tiradasProcesadas.clear();
+      tvStats = { personas_unicas: 0, premio: 0, promocional: 0 };
+      localStorage.removeItem('tv_dispositivos');
+      localStorage.removeItem('tv_personas_unicas');
+      localStorage.removeItem('tv_premio');
+      localStorage.removeItem('tv_promocional');
+      actualizarEstadisticas(tvStats);
+      document.getElementById('tv-history-list').innerHTML = `
+        <li class="history-item gracias">
+          <span>Conteo reseteado</span>
+          <span>--:--</span>
+        </li>
+      `;
+    }
 
     // --- CONEXIÓN CON EL SERVIDOR EN VIVO LOCAL SI EXISTE ---
     function conectarServidorSSE() {
@@ -746,6 +798,38 @@
     }
 
     function revelarResultadoVisor(data) {
+      if (!data || !data.resultado) return;
+
+      // --- DEDUPLICACIÓN ESTRICTA (Ignora duplicados de canal local y nube) ---
+      const tiradaKey = data.tirada_id || (data.device_id + '_' + data.folio);
+      if (tiradasProcesadas.has(tiradaKey)) {
+        return; // Ya procesado, no duplicar premio ni animación!
+      }
+      tiradasProcesadas.add(tiradaKey);
+      if (tiradasProcesadas.size > 200) {
+        const primerKey = tiradasProcesadas.values().next().value;
+        tiradasProcesadas.delete(primerKey);
+      }
+
+      // Contar persona única
+      if (data.device_id) {
+        dispositivosLocales.add(data.device_id);
+        document.getElementById('tv-stat-total').textContent = dispositivosLocales.size;
+        localStorage.setItem('tv_dispositivos', JSON.stringify([...dispositivosLocales]));
+        localStorage.setItem('tv_personas_unicas', dispositivosLocales.size);
+      }
+
+      // Sumar estadísticas locales en pantalla
+      if (data.resultado === 'PREMIO') {
+        tvStats.premio++;
+        document.getElementById('tv-stat-premio').textContent = tvStats.premio;
+        localStorage.setItem('tv_premio', tvStats.premio);
+      } else if (data.resultado === 'PROMOCIONAL') {
+        tvStats.promocional++;
+        document.getElementById('tv-stat-promocional').textContent = tvStats.promocional;
+        localStorage.setItem('tv_promocional', tvStats.promocional);
+      }
+
       initTvAudio();
       visorShuffling = false;
 

@@ -141,6 +141,7 @@ def registrar_tirada():
     resultado = data.get("resultado", "GRACIAS POR PARTICIPAR")
     folio = data.get("folio", "PR-0000")
     device_id = data.get("device_id", "anonimo")
+    tirada_id = data.get("tirada_id", f"t_{device_id}_{int(time.time())}_{folio}")
     timestamp = time.strftime("%H:%M:%S")
 
     # Registro de dispositivo único (una persona = un conteo en personas)
@@ -159,6 +160,7 @@ def registrar_tirada():
 
     evento = {
         "tipo": "NUEVA_TIRADA",
+        "tirada_id": tirada_id,
         "resultado": resultado,
         "folio": folio,
         "device_id": device_id,
