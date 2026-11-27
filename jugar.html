@@ -329,11 +329,12 @@
     }
 
     .btn-action:disabled {
-      background: #2a3d60;
-      color: #7b90b2;
+      background: linear-gradient(135deg, #1d3356 0%, #152542 100%);
+      color: #8da4ca;
       box-shadow: none;
       cursor: not-allowed;
       transform: none;
+      opacity: 0.75;
     }
 
     .btn-action::after {
@@ -987,11 +988,11 @@
       // Notificar al monitor en vivo en pantalla de TV
       notificarVisorResultado(resultado, folio, timestamp);
 
-      // Bloquear pantalla tras el tiro único: para volver a jugar deben volver a lanzar el dado físico
-      btn.textContent = '🎲 VUELVE A LANZAR EL DADO';
-      btn.disabled = true;
-      btn.style.opacity = '0.85';
-      resultMessage.innerHTML += '<br><span style="color: var(--coosajo-green-neon); font-size: 0.82rem; display: inline-block; margin-top: 10px; font-weight: 700;">📲 Para participar de nuevo, lanza el dado físico y escanea la cara que caiga.</span>';
+      // Botón habilitado para permitir volver a tirar inmediatamente
+      btn.textContent = '🎲 ¡TIRAR DE NUEVO!';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      resultMessage.innerHTML += '<br><span style="color: var(--coosajo-green-neon); font-size: 0.85rem; display: inline-block; margin-top: 10px; font-weight: 700;">🎲 Toca el botón verde o vuelve a lanzar el dado físico para otra tirada.</span>';
 
       isSpinning = false;
     }
