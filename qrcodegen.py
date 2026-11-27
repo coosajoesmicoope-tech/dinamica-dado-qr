@@ -176,18 +176,18 @@ class QrCode:
         bits = (data << 10 | rem) ^ 0x5412
         
         for i in range(0, 6):
-            self._set_module(8, i, _get_bit(bits, i))
-        self._set_module(8, 7, _get_bit(bits, 6))
-        self._set_module(8, 8, _get_bit(bits, 7))
-        self._set_module(7, 8, _get_bit(bits, 8))
+            self._set_function_module(8, i, _get_bit(bits, i))
+        self._set_function_module(8, 7, _get_bit(bits, 6))
+        self._set_function_module(8, 8, _get_bit(bits, 7))
+        self._set_function_module(7, 8, _get_bit(bits, 8))
         for i in range(9, 15):
-            self._set_module(14 - i, 8, _get_bit(bits, i))
+            self._set_function_module(14 - i, 8, _get_bit(bits, i))
         
         for i in range(0, 8):
-            self._set_module(self.size - 1 - i, 8, _get_bit(bits, i))
+            self._set_function_module(self.size - 1 - i, 8, _get_bit(bits, i))
         for i in range(8, 15):
-            self._set_module(8, self.size - 15 + i, _get_bit(bits, i))
-        self._set_module(8, self.size - 8, True)
+            self._set_function_module(8, self.size - 15 + i, _get_bit(bits, i))
+        self._set_function_module(8, self.size - 8, True)
 
     def _draw_version(self):
         if self.version < 7:
