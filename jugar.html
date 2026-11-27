@@ -159,17 +159,19 @@
       height: 100%;
       position: relative;
       transform-style: preserve-3d;
-      transition: transform 2.4s cubic-bezier(0.18, 0.9, 0.25, 1);
+      transition: transform 1.2s cubic-bezier(0.15, 0.85, 0.35, 1.15);
     }
 
     .dice-cube.rolling {
-      animation: diceRollTumble 0.16s infinite linear;
+      animation: diceRollTumble 0.35s infinite ease-in-out;
     }
 
     @keyframes diceRollTumble {
-      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-      50% { transform: rotateX(180deg) rotateY(270deg) rotateZ(90deg); }
-      100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) translateY(0); }
+      25% { transform: rotateX(90deg) rotateY(180deg) rotateZ(45deg) translateY(-18px); }
+      50% { transform: rotateX(180deg) rotateY(270deg) rotateZ(120deg) translateY(-4px); }
+      75% { transform: rotateX(270deg) rotateY(360deg) rotateZ(200deg) translateY(-22px); }
+      100% { transform: rotateX(360deg) rotateY(540deg) rotateZ(360deg) translateY(0); }
     }
 
     .dice-face {
@@ -666,8 +668,8 @@
       </div>
 
       <!-- Botón de Estado / Indicación -->
-      <button class="btn-action" id="btn-spin" style="cursor: default;" disabled>
-        ¡DADO RODANDO...!
+      <button class="btn-action" id="btn-spin" style="cursor: pointer;">
+        🎲 ¡GIRAR DADO!
       </button>
 
     </div>
@@ -762,18 +764,27 @@
 
     let isSpinning = false;
 
-    // Cargar estadísticas al inicio
-    document.getElementById('stat-gracias').textContent = stats.gracias;
-    document.getElementById('stat-promocional').textContent = stats.promocional;
-    document.getElementById('stat-premio').textContent = stats.premio;
-
     // --- AUTO-INICIO INMEDIATO EN CADA ESCANEO ---
-    window.addEventListener('DOMContentLoaded', () => {
-      // Cada escaneo lanza el dado automáticamente tras 400ms
+    function arrancarAutoSorteo() {
+      // Iniciar el giro automáticamente tras una breve pausa visual
       setTimeout(() => {
         iniciarSorteo();
-      }, 400);
-    });
+      }, 350);
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', arrancarAutoSorteo);
+    } else {
+      arrancarAutoSorteo();
+    }
+
+    // Permitir también tocar el botón o la pantalla para lanzar si el navegador frenó el autoplay
+    const spinBtn = document.getElementById('btn-spin');
+    if (spinBtn) {
+      spinBtn.addEventListener('click', () => {
+        if (!isSpinning) iniciarSorteo();
+      });
+    }
 
     // --- SÍNTESIS DE SONIDO WEB AUDIO API (100% OFFLINE) ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -926,9 +937,9 @@
       const folio = Math.floor(1000 + Math.random() * 9000);
       const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      // Orientar el cubo 3D hacia la cara que cayó
+      // Orientar el cubo 3D hacia la cara que cayó con giro de frenado
       if (resultado === 'PREMIO') {
-        cube.style.transform = 'rotateX(-90deg) rotateY(0deg)'; // Cara Superior (Top)
+        cube.style.transform = 'rotateX(630deg) rotateY(720deg)'; // Cara Superior (Top)
         slotText.textContent = '¡PREMIO!';
         slotText.classList.add('result-premio');
         resultMessage.innerHTML = '🎉 <strong>¡FELICIDADES! ¡CAYÓ PREMIO!</strong><br>Muestra esta pantalla al encargado para reclamar tu premio.';
@@ -938,7 +949,7 @@
         playWinSound();
         stats.premio++;
       } else if (resultado === 'PROMOCIONAL') {
-        cube.style.transform = 'rotateX(90deg) rotateY(0deg)'; // Cara Inferior (Bottom)
+        cube.style.transform = 'rotateX(810deg) rotateY(720deg)'; // Cara Inferior (Bottom)
         slotText.textContent = 'PROMOCIONAL';
         slotText.classList.add('result-promocional');
         resultMessage.innerHTML = '🎁 <strong>¡CAYÓ ARTÍCULO PROMOCIONAL!</strong><br>Pasa al módulo para recibir tu souvenir.';
@@ -948,7 +959,7 @@
         playPromoSound();
         stats.promocional++;
       } else {
-        cube.style.transform = 'rotateX(0deg) rotateY(0deg)'; // Cara Frontal (Front)
+        cube.style.transform = 'rotateX(720deg) rotateY(720deg)'; // Cara Frontal (Front)
         slotText.textContent = 'GRACIAS POR PARTICIPAR';
         slotText.classList.add('result-gracias');
         resultMessage.innerHTML = '💙 <strong>¡Muchas gracias por participar!</strong><br>Apreciamos tu visita. ¡Que disfrutes del evento!';
@@ -960,9 +971,6 @@
       localStorage.setItem('stat_gracias', stats.gracias);
       localStorage.setItem('stat_promocional', stats.promocional);
       localStorage.setItem('stat_premio', stats.premio);
-      document.getElementById('stat-gracias').textContent = stats.gracias;
-      document.getElementById('stat-promocional').textContent = stats.promocional;
-      document.getElementById('stat-premio').textContent = stats.premio;
 
       // Notificar al monitor en vivo en pantalla de TV
       notificarVisorResultado(resultado, folio, timestamp);
@@ -1005,81 +1013,18 @@
       btn.disabled = true;
     }
 
-    // --- REINICIAR Y AJUSTES ---
+    // --- REINICIAR PARTIDA ---
     function reiniciarPartida() {
-      localStorage.removeItem('resultado_previo');
       const slotText = document.getElementById('slot-text');
       slotText.className = 'slot-text';
       slotText.textContent = '¡LISTO PARA JUGAR!';
-      document.getElementById('result-message').textContent = 'Presiona el botón verde para iniciar la dinámica.';
+      document.getElementById('result-message').textContent = 'Lanza el dado y descubre tu suerte.';
       document.getElementById('validation-container').style.display = 'none';
       const btn = document.getElementById('btn-spin');
-      btn.textContent = '¡TOCAR PARA JUGAR!';
+      btn.textContent = '🎲 ¡LANZAR DADO!';
       btn.disabled = false;
-      cerrarModal('modal-config');
-    }
-
-    function resetEstadisticas() {
-      if (confirm('¿Deseas reiniciar los contadores de la sesión a 0?')) {
-        stats = { gracias: 0, promocional: 0, premio: 0 };
-        localStorage.setItem('stat_gracias', '0');
-        localStorage.setItem('stat_promocional', '0');
-        localStorage.setItem('stat_premio', '0');
-        document.getElementById('stat-gracias').textContent = 0;
-        document.getElementById('stat-promocional').textContent = 0;
-        document.getElementById('stat-premio').textContent = 0;
-      }
-    }
-
-    function toggleAntiTrampa() {
-      antiTrampaActivo = document.getElementById('check-anti-trampa').checked;
-      localStorage.setItem('anti_trampa', antiTrampaActivo);
-    }
-
-    function actualizarProbabilidades(cambiado) {
-      const gInput = document.getElementById('range-gracias');
-      const pInput = document.getElementById('range-promocional');
-      const prInput = document.getElementById('range-premio');
-
-      let g = parseInt(gInput.value);
-      let p = parseInt(pInput.value);
-      let pr = parseInt(prInput.value);
-
-      // Ajuste automático suave para que la suma sea 100%
-      if (cambiado === 'gracias') {
-        const restante = 100 - g;
-        pr = Math.max(1, Math.round(restante * 0.28));
-        p = restante - pr;
-      } else if (cambiado === 'premio') {
-        pr = Math.min(pr, 40);
-        const restante = 100 - pr;
-        p = Math.min(p, restante - 10);
-        g = restante - p;
-      } else if (cambiado === 'promocional') {
-        const restante = 100 - p;
-        pr = Math.min(pr, restante - 10);
-        g = restante - pr;
-      }
-
-      prob.gracias = g;
-      prob.promocional = p;
-      prob.premio = pr;
-
-      gInput.value = g;
-      pInput.value = p;
-      prInput.value = pr;
-
-      document.getElementById('val-gracias').textContent = g + '%';
-      document.getElementById('val-promocional').textContent = p + '%';
-      document.getElementById('val-premio').textContent = pr + '%';
-    }
-
-    // --- MODALES ---
-    function abrirModal(id) {
-      document.getElementById(id).classList.add('active');
-    }
-    function cerrarModal(id) {
-      document.getElementById(id).classList.remove('active');
+      btn.style.opacity = '1';
+      isSpinning = false;
     }
 
     // --- MOTOR DE CONFETI EN CANVAS (LIGERO Y SIN LIBRERÍAS EXTERNAS) ---
