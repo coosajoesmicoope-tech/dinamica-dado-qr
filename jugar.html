@@ -1027,6 +1027,11 @@
 
     // --- REINICIAR PARTIDA ---
     function reiniciarPartida() {
+      const cube = document.getElementById('dice-cube');
+      if (cube) {
+        cube.classList.remove('rolling');
+        cube.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      }
       const slotText = document.getElementById('slot-text');
       slotText.className = 'slot-text';
       slotText.textContent = '¡LISTO PARA JUGAR!';

@@ -556,6 +556,7 @@
     let visorConectado = false;
     let timeoutVisor = null;
     let cloudSourceAdmin = null;
+    let ultimoResetAdmin = parseInt(localStorage.getItem('admin_ultimo_reset') || '0', 10);
 
     function marcarVisorConectado(info) {
       visorConectado = true;
@@ -564,6 +565,11 @@
       if (badge && text) {
         badge.className = 'connection-badge status-connected';
         text.textContent = '🟢 Visor TV Conectado en Vivo';
+      }
+
+      // Si el paquete recibido fue generado antes del último reseteo, IGNORAR números antiguos
+      if (info && info.timestamp && info.timestamp < ultimoResetAdmin) {
+        return;
       }
 
       if (info && info.personas_unicas !== undefined) {
@@ -656,9 +662,11 @@
       procesarMensajeAdmin(event.data);
     };
 
-    // Solicitar estado al iniciar
+    // Solicitar estado al iniciar por canal local
     solicitarEstadoVisor();
-    setInterval(solicitarEstadoVisor, 8000);
+    setInterval(() => {
+      canal.postMessage({ tipo: 'ADMIN_PING', timestamp: Date.now() });
+    }, 10000);
 
     // Conectar con servidor si está corriendo en HTTP
     if (window.location.protocol.startsWith('http')) {
@@ -721,6 +729,8 @@
     }
 
     function ejecutarResetLocal() {
+      ultimoResetAdmin = Date.now();
+      localStorage.setItem('admin_ultimo_reset', ultimoResetAdmin.toString());
       dispositivosAdmin.clear();
       tiradasProcesadasAdmin.clear();
       stats = { personas_unicas: 0, total_lanzamientos: 0, premio: 0, promocional: 0, gracias: 0 };

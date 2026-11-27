@@ -687,12 +687,14 @@
       // 1. Canal local
       canalLocal.postMessage(payload);
 
-      // 2. Nube
-      fetch(CLOUD_STREAM_URL.replace('/sse', ''), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(() => {});
+      // 2. Solo enviar por la nube para respuestas explícitas (PONG o confirmación de reset)
+      if (tipoEvento === 'VISOR_PONG' || tipoEvento === 'RESET_CONFIRMADO') {
+        fetch(CLOUD_STREAM_URL.replace('/sse', ''), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
     }
 
     function procesarMensajeVisor(data) {
@@ -741,10 +743,16 @@
     }
     conectarSincronizacionNube();
 
-    // Emitir latido de presencia cada 5 segundos para que el admin confirme que está conectado
+    // Emitir latido local cada 3 segundos
     setInterval(() => {
-      enviarSenalVisor('VISOR_HEARTBEAT');
-    }, 5000);
+      canalLocal.postMessage({
+        tipo: 'VISOR_HEARTBEAT',
+        personas_unicas: dispositivosLocales.size,
+        premio: tvStats.premio,
+        promocional: tvStats.promocional,
+        timestamp: Date.now()
+      });
+    }, 3000);
 
     function ejecutarResetVisor() {
       dispositivosLocales.clear();
@@ -755,6 +763,36 @@
       localStorage.removeItem('tv_premio');
       localStorage.removeItem('tv_promocional');
       actualizarEstadisticas(tvStats);
+
+      // Limpiar y resetear la escena central del visor completamente
+      visorShuffling = false;
+      const cube = document.getElementById('tv-dice-cube');
+      if (cube) {
+        cube.classList.remove('rolling');
+        cube.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      }
+
+      const wordElem = document.getElementById('stage-word');
+      if (wordElem) {
+        wordElem.className = 'stage-word';
+        wordElem.textContent = '¡LISTO PARA JUGAR!';
+      }
+
+      const statusElem = document.getElementById('stage-status');
+      if (statusElem) {
+        statusElem.textContent = '🎲 LANZA EL DADO Y ESCANEA EL QR 🎲';
+      }
+
+      const subtextElem = document.getElementById('stage-subtext');
+      if (subtextElem) {
+        subtextElem.textContent = 'Lanza el dado sobre la mesa y escanea el código QR de la cara que caiga.';
+      }
+
+      const folioContainer = document.getElementById('stage-folio-container');
+      if (folioContainer) {
+        folioContainer.style.display = 'none';
+      }
+
       document.getElementById('tv-history-list').innerHTML = `
         <li class="history-item gracias">
           <span>Conteo reseteado</span>
