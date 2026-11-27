@@ -696,6 +696,7 @@
         reiniciarPartida();
       } else if (data.tipo === 'UPDATE_CONFIG' && data.prob) {
         prob = data.prob;
+        localStorage.setItem('dado_probabilidades', JSON.stringify(data.prob));
       }
     };
 
@@ -757,6 +758,15 @@
       promocional: 18,
       premio: 7
     };
+    try {
+      const pSaved = localStorage.getItem('dado_probabilidades') || localStorage.getItem('admin_probabilidades');
+      if (pSaved) {
+        const parsed = JSON.parse(pSaved);
+        if (parsed.gracias !== undefined && parsed.promocional !== undefined && parsed.premio !== undefined) {
+          prob = parsed;
+        }
+      }
+    } catch (e) {}
 
     let stats = {
       gracias: parseInt(localStorage.getItem('stat_gracias') || '0'),

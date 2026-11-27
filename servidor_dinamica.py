@@ -100,8 +100,14 @@ def static_files(filename):
 
 # --- APIS DE SINCRONIZACIÓN Y RESET ---
 
-@app.route("/api/config", methods=["GET"])
+@app.route("/api/config", methods=["GET", "POST"])
 def get_config():
+    if request.method == "POST":
+        data = request.json or {}
+        if "probabilidades" in data:
+            estado["probabilidades"].update(data["probabilidades"])
+        return jsonify({"status": "ok", "probabilidades": estado["probabilidades"]})
+
     ip = obtener_ip_local()
     return jsonify({
         "probabilidades": estado["probabilidades"],

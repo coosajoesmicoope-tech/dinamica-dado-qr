@@ -219,6 +219,29 @@
       border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+    .btn-save-config {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #00e626, #00b31e);
+      color: #011438;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 230, 38, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-save-config:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 230, 38, 0.6);
+    }
+    .btn-save-config:active {
+      transform: scale(0.97);
+    }
+
     /* TABLA DE HISTORIAL */
     .history-table {
       width: 100%;
@@ -371,6 +394,14 @@
           <div style="font-size: 0.78rem; color: #8fa5c7;">Evita que recarguen la página tras ver su resultado</div>
         </div>
         <input type="checkbox" id="check-anti-trampa" style="width: 22px; height: 22px; accent-color: var(--green-neon);" onchange="toggleAntiTrampa()">
+      </div>
+
+      <!-- Botón para Fijar y Guardar Configuración -->
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <button class="btn-save-config" onclick="guardarConfiguracionFija()">
+          <span>💾</span> FIJAR Y GUARDAR CONFIGURACIÓN
+        </button>
+        <span id="config-status-msg" style="font-size: 0.85rem; color: var(--green-neon); font-weight: 700;"></span>
       </div>
     </div>
 
@@ -596,7 +627,75 @@
       document.getElementById('lbl-prob-promocional').textContent = p + '%';
       document.getElementById('lbl-prob-premio').textContent = pr + '%';
 
+      // Guardar automáticamente en almacenamiento local
+      localStorage.setItem('admin_probabilidades', JSON.stringify(prob));
+
       canal.postMessage({ tipo: 'UPDATE_CONFIG', prob: prob });
+    }
+
+    function guardarConfiguracionFija() {
+      // 1. Guardar permanentemente en localStorage
+      localStorage.setItem('admin_probabilidades', JSON.stringify(prob));
+      const antiTrampa = document.getElementById('check-anti-trampa').checked;
+      localStorage.setItem('anti_trampa', antiTrampa);
+
+      const payload = {
+        tipo: 'UPDATE_CONFIG',
+        prob: prob,
+        anti_trampa: antiTrampa,
+        timestamp: Date.now()
+      };
+
+      // 2. Transmitir por canal local
+      canal.postMessage(payload);
+
+      // 3. Transmitir por la nube para celulares conectados
+      fetch(CLOUD_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+
+      // 4. Si hay servidor python local, guardar también
+      if (window.location.protocol.startsWith('http') && !window.location.host.includes('github.io')) {
+        fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ probabilidades: prob, anti_trampa: antiTrampa })
+        }).catch(() => {});
+      }
+
+      // 5. Feedback visual
+      const statusMsg = document.getElementById('config-status-msg');
+      if (statusMsg) {
+        statusMsg.textContent = `✓ Guardado permanente: ${prob.gracias}% Gracias, ${prob.promocional}% Promo, ${prob.premio}% Premio`;
+        setTimeout(() => { statusMsg.textContent = ''; }, 4500);
+      }
+      mostrarToast(`💾 ¡Configuración fijada con éxito! (${prob.gracias}% Gracias / ${prob.promocional}% Promo / ${prob.premio}% Premio)`);
+    }
+
+    function cargarConfiguracionGuardada() {
+      const savedProb = localStorage.getItem('admin_probabilidades');
+      if (savedProb) {
+        try {
+          const parsed = JSON.parse(savedProb);
+          if (parsed.gracias !== undefined && parsed.promocional !== undefined && parsed.premio !== undefined) {
+            prob = parsed;
+          }
+        } catch (e) {}
+      }
+
+      document.getElementById('range-gracias').value = prob.gracias;
+      document.getElementById('range-promocional').value = prob.promocional;
+      document.getElementById('range-premio').value = prob.premio;
+      document.getElementById('lbl-prob-gracias').textContent = prob.gracias + '%';
+      document.getElementById('lbl-prob-promocional').textContent = prob.promocional + '%';
+      document.getElementById('lbl-prob-premio').textContent = prob.premio + '%';
+
+      const savedAntiTrampa = localStorage.getItem('anti_trampa');
+      if (savedAntiTrampa !== null) {
+        document.getElementById('check-anti-trampa').checked = (savedAntiTrampa === 'true' || savedAntiTrampa === true);
+      }
     }
 
     function toggleAntiTrampa() {
@@ -606,6 +705,7 @@
       mostrarToast(val ? '🔒 Anti-trampa activado (1 intento)' : '🔓 Modo libre activado');
     }
 
+    cargarConfiguracionGuardada();
     renderizarEstadisticas();
   </script>
 </body>
