@@ -777,9 +777,19 @@
 
     let isSpinning = false;
 
-    // --- AUTO-INICIO INMEDIATO EN CADA ESCANEO ---
+    // --- AUTO-INICIO INMEDIATO EN CADA ESCANEO (1 SOLO TIRO POR PERSONA) ---
     function arrancarAutoSorteo() {
-      // Iniciar el giro automáticamente tras una breve pausa visual
+      // Si la persona ya tiene un tiro registrado previamente, mostrar su resultado fijo sin volver a tirar
+      const previo = localStorage.getItem('coosajo_resultado_previo');
+      if (previo) {
+        try {
+          const datos = JSON.parse(previo);
+          mostrarResultadoGuardado(datos);
+          return;
+        } catch (e) {}
+      }
+
+      // Si es su primera vez, iniciar el giro automáticamente tras 350ms
       setTimeout(() => {
         iniciarSorteo();
       }, 350);
@@ -988,11 +998,16 @@
       // Notificar al monitor en vivo en pantalla de TV
       notificarVisorResultado(resultado, folio, timestamp);
 
-      // Botón habilitado para permitir volver a tirar inmediatamente
-      btn.textContent = '🎲 ¡TIRAR DE NUEVO!';
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      resultMessage.innerHTML += '<br><span style="color: var(--coosajo-green-neon); font-size: 0.85rem; display: inline-block; margin-top: 10px; font-weight: 700;">🎲 Toca el botón verde o vuelve a lanzar el dado físico para otra tirada.</span>';
+      // Guardar tiro previo en este dispositivo para bloquear más intentos
+      const datosPrevios = {
+        resultado: resultado,
+        folio: folio,
+        timestamp: timestamp
+      };
+      localStorage.setItem('coosajo_resultado_previo', JSON.stringify(datosPrevios));
+
+      // Ocultar botón de tirar (1 solo intento por persona)
+      btn.style.display = 'none';
 
       isSpinning = false;
     }
@@ -1003,31 +1018,37 @@
       const validationContainer = document.getElementById('validation-container');
       const validationCode = document.getElementById('validation-code');
       const btn = document.getElementById('btn-spin');
+      const cube = document.getElementById('dice-cube');
 
       if (datos.resultado === 'PREMIO') {
+        if (cube) cube.style.transform = 'rotateX(630deg) rotateY(720deg)';
         slotText.textContent = '¡PREMIO!';
         slotText.className = 'slot-text result-premio';
         resultMessage.innerHTML = '🎉 <strong>¡GANADOR REGISTRADO!</strong><br>Premio reclamable con este folio:';
         validationCode.textContent = `GANADOR: #PR-${datos.folio} • ${datos.timestamp}`;
         validationContainer.style.display = 'block';
       } else if (datos.resultado === 'PROMOCIONAL') {
+        if (cube) cube.style.transform = 'rotateX(810deg) rotateY(720deg)';
         slotText.textContent = 'PROMOCIONAL';
         slotText.className = 'slot-text result-promocional';
         resultMessage.innerHTML = '🎁 <strong>PROMOCIONAL REGISTRADO</strong><br>Obsequio reclamable:';
         validationCode.textContent = `PROMO: #SO-${datos.folio} • ${datos.timestamp}`;
         validationContainer.style.display = 'block';
       } else {
+        if (cube) cube.style.transform = 'rotateX(720deg) rotateY(720deg)';
         slotText.textContent = 'GRACIAS POR PARTICIPAR';
         slotText.className = 'slot-text result-gracias';
-        resultMessage.innerHTML = '💙 <strong>¡Ya has participado hoy!</strong><br>Gracias por ser parte de nuestra comunidad.';
+        resultMessage.innerHTML = '💙 <strong>¡Muchas gracias por participar!</strong><br>Tu participación de 1 tiro ya fue registrada.';
+        validationContainer.style.display = 'none';
       }
 
-      btn.textContent = 'YA HAS PARTICIPADO';
-      btn.disabled = true;
+      btn.style.display = 'none';
+      isSpinning = false;
     }
 
     // --- REINICIAR PARTIDA ---
     function reiniciarPartida() {
+      localStorage.removeItem('coosajo_resultado_previo');
       const cube = document.getElementById('dice-cube');
       if (cube) {
         cube.classList.remove('rolling');
@@ -1040,6 +1061,7 @@
       document.getElementById('validation-container').style.display = 'none';
       const btn = document.getElementById('btn-spin');
       btn.textContent = '🎲 ¡LANZAR DADO!';
+      btn.style.display = 'block';
       btn.disabled = false;
       btn.style.opacity = '1';
       isSpinning = false;
