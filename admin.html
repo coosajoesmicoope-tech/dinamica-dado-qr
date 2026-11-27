@@ -107,26 +107,33 @@
     }
 
     .btn-danger {
-      background: rgba(180, 20, 30, 0.85);
-      border: 1px solid var(--red);
-      color: #fff;
-      padding: 10px 22px;
+      background: linear-gradient(135deg, #e60020 0%, #ba0015 100%);
+      border: 2px solid #ff4d60;
+      color: #ffffff;
+      padding: 12px 24px;
       border-radius: 12px;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: 800;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       margin-left: auto;
-      transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(255, 50, 60, 0.3);
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 18px rgba(255, 30, 50, 0.5);
+      opacity: 1 !important;
+      position: relative;
+      z-index: 5;
     }
 
     .btn-danger:hover {
-      background: var(--red);
+      background: linear-gradient(135deg, #ff1a38 0%, #d4001a 100%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 50, 60, 0.6);
+      box-shadow: 0 8px 25px rgba(255, 30, 50, 0.8);
+    }
+
+    .btn-danger:active {
+      transform: scale(0.97);
     }
 
     /* TARJETAS DE MÉTRICAS */
